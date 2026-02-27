@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CU Command Center — EdFed Analytics Platform</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root {
+    --p: #223E99; --pd: #1a3178; --pl: #3358cc; --gold: #BEB591; --gd: #a89e7a;
+    --g: #10b981; --gb: #ecfdf5; --r: #ef4444; --rb: #fef2f2;
+    --a: #f59e0b; --ab: #fffbeb; --bb: #eff6ff; --purple: #8b5cf6;
+    --g50: #f9fafb; --g100: #f3f4f6; --g200: #e5e7eb; --g300: #d1d5db;
+    --g400: #9ca3af; --g500: #6b7280; --g600: #4b5563; --g700: #374151;
+    --g800: #1f2937; --g900: #111827;
+    --sh: 0 1px 3px rgba(0,0,0,.1); --shm: 0 4px 6px -1px rgba(0,0,0,.1);
+    --shl: 0 10px 15px -3px rgba(0,0,0,.1); --rad: 12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--g50);color:var(--g800);line-height:1.5}
+
+/* Nav */
+.nav{background:linear-gradient(135deg,var(--pd),var(--p));color:#fff;position:sticky;top:0;z-index:100;box-shadow:var(--shl)}
+.nav-inner{max-width:1500px;margin:0 auto;padding:10px 28px;display:flex;align-items:center;gap:20px}
+.nav-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.2em;white-space:nowrap}
+.nav-brand span{font-size:1.3em}
+.nav-tabs{display:flex;gap:2px;flex:1;justify-content:center}
+.nav-tab{padding:8px 18px;border-radius:8px;cursor:pointer;font-size:.82em;font-weight:600;color:rgba(255,255,255,.7);transition:.2s;white-space:nowrap}
+.nav-tab:hover{background:rgba(255,255,255,.12);color:#fff}
+.nav-tab.active{background:rgba(255,255,255,.2);color:#fff}
+.nav-meta{font-size:.7em;opacity:.7;text-align:right;white-space:nowrap}
+
+/* Page container */
+.page{display:none;max-width:1500px;margin:0 auto;padding:24px 28px 48px}
+.page.active{display:block}
+
+/* Cards */
+.card{background:#fff;border-radius:var(--rad);box-shadow:var(--sh);overflow:hidden;margin-bottom:20px}
+.card-h{padding:16px 22px 12px;border-bottom:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between}
+.card-t{font-size:.92em;font-weight:700;display:flex;align-items:center;gap:8px}
+.card-b{padding:18px 22px}
+.card-b.chart{padding:14px 18px}
+
+/* Grids */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.g6{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+@media(max-width:1100px){.g2,.g3{grid-template-columns:1fr}.g4,.g5,.g6{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.g4,.g5,.g6{grid-template-columns:repeat(2,1fr)}}
+
+/* KPI Cards */
+.kpi{background:#fff;border-radius:var(--rad);padding:18px 20px;box-shadow:var(--shm);position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-l{font-size:.68em;text-transform:uppercase;letter-spacing:.06em;color:var(--g500);font-weight:600;margin-bottom:4px}
+.kpi-v{font-size:1.6em;font-weight:800;color:var(--g900);letter-spacing:-.02em;line-height:1.1}
+.kpi-c{display:inline-flex;align-items:center;gap:3px;font-size:.72em;font-weight:600;margin-top:5px;padding:2px 7px;border-radius:6px}
+.kpi-c.up{color:#047857;background:var(--gb)}.kpi-c.dn{color:#dc2626;background:var(--rb)}
+.kpi-s{font-size:.68em;color:var(--g400);margin-top:3px}
+
+/* Tables */
+.tbl{width:100%;border-collapse:collapse;font-size:.82em}
+.tbl th{text-align:left;padding:9px 10px;font-size:.7em;text-transform:uppercase;letter-spacing:.05em;color:var(--g500);font-weight:600;border-bottom:2px solid var(--g200)}
+.tbl th:not(:first-child){text-align:right}
+.tbl td{padding:8px 10px;border-bottom:1px solid var(--g100)}
+.tbl td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+.tbl tr:hover{background:var(--g50)}
+.tbl tr.hl{background:var(--bb);font-weight:600}
+
+/* Bars */
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:.8em}
+.bar-name{width:130px;flex-shrink:0;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;height:22px;background:var(--g100);border-radius:6px;overflow:hidden}
+.bar-fill{height:100%;border-radius:6px;transition:width 1s}
+.bar-val{width:70px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0}
+
+/* Gauge */
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;padding:10px}
+.gauge{position:relative;width:120px;height:120px}
+.gauge svg{transform:rotate(-90deg)}
+.gauge-num{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2em;font-weight:800;line-height:1}
+.gauge-lbl{font-size:.68em;color:var(--g400);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-top:-4px}
+
+/* Badges */
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:.68em;font-weight:700}
+.badge-g{background:var(--gb);color:#047857}.badge-a{background:var(--ab);color:#92400e}
+.badge-r{background:var(--rb);color:#dc2626}.badge-b{background:var(--bb);color:var(--p)}
+.badge-p{background:#f3e8ff;color:#7c3aed}
+
+/* Percentile bar */
+.pctl{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:.78em}
+.pctl-track{flex:1;height:8px;background:var(--g100);border-radius:4px;position:relative}
+.pctl-fill{height:100%;border-radius:4px;background:var(--p)}
+.pctl-marker{position:absolute;top:-4px;width:3px;height:16px;background:var(--r);border-radius:2px}
+.pctl-label{width:100px;font-weight:500}.pctl-val{width:50px;text-align:right;font-weight:600}
+
+/* Camel */
+.camel-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:16px 0}
+.camel-item{text-align:center;padding:16px 8px;background:var(--g50);border-radius:10px}
+.camel-letter{font-size:2em;font-weight:800;line-height:1}
+.camel-score{font-size:1.4em;font-weight:700;margin:4px 0}
+.camel-name{font-size:.7em;color:var(--g500);text-transform:uppercase;letter-spacing:.05em}
+
+/* Rate card */
+.rate-card{padding:14px;background:var(--g50);border-radius:10px;text-align:center}
+.rate-card .rate-val{font-size:1.8em;font-weight:800;color:var(--p)}
+.rate-card .rate-lbl{font-size:.72em;color:var(--g500);margin-top:2px}
+.rate-card .rate-cmp{font-size:.72em;margin-top:4px}
+
+/* Tabs within page */
+.subtabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid var(--g200);padding-bottom:0}
+.subtab{padding:8px 16px;cursor:pointer;font-size:.82em;font-weight:600;color:var(--g400);border-bottom:2px solid transparent;margin-bottom:-2px;transition:.2s}
+.subtab:hover{color:var(--g700)}
+.subtab.active{color:var(--p);border-bottom-color:var(--p)}
+.subpage{display:none}.subpage.active{display:block}
+
+/* Animations */
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.card,.kpi{animation:fadeIn .4s ease forwards}
+
+/* Footer */
+.footer{text-align:center;padding:20px;font-size:.7em;color:var(--g400);border-top:1px solid var(--g200);max-width:1500px;margin:0 auto}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:var(--g300);border-radius:3px}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+<div class="nav-inner">
+    <div class="nav-brand"><span>🏦</span> CU Command Center</div>
+    <div class="nav-tabs">
+        <div class="nav-tab active" data-page="executive">📊 Executive</div>
+        <div class="nav-tab" data-page="income">💰 Income & Expense</div>
+        <div class="nav-tab" data-page="loans">📋 Loan Portfolio</div>
+        <div class="nav-tab" data-page="peers">🏆 Peer Analysis</div>
+        <div class="nav-tab" data-page="camel">🎯 CAMEL Scorecard</div>
+        <div class="nav-tab" data-page="simulator">🔮 Growth Simulator</div>
+    </div>
+    <div class="nav-meta">NCUA Q3 2025<br>Charter #176</div>
+</div>
+</nav>
+
+<!-- ═══════════════ EXECUTIVE DASHBOARD ═══════════════ -->
+<div class="page active" id="page-executive">
+<div style="padding:16px 0 8px"><h2 style="font-size:1.1em;color:var(--g800)">EdFed — The Educational Federal Credit Union <span class="badge badge-b">Est. 1935 · Miami, FL</span></h2></div>
+
+<div class="g6" style="margin-bottom:20px" id="exec-kpis"></div>
+
+<div class="g2">
+    <div class="card"><div class="card-h"><div class="card-t">📈 Financial Growth Trajectory</div></div>
+    <div class="card-b chart"><canvas id="execGrowthChart" height="240"></canvas></div></div>
+    
+    <div class="card"><div class="card-h"><div class="card-t">💪 Financial Health Score</div></div>
+    <div class="card-b" id="healthScore"></div></div>
+</div>
+
+<div class="g2">
+    <div class="card"><div class="card-h"><div class="card-t">🗺️ Florida Ranking (Top 15 by Assets)</div></div>
+    <div class="card-b" id="stateRank"></div></div>
+    
+    <div class="card"><div class="card-h"><div class="card-t">⚡ Key Ratio Percentiles vs. FL Peers</div></div>
+    <div class="card-b" id="percentiles"></div></div>
+</div>
+</div>
+
+<!-- ═══════════════ INCOME & EXPENSE ═══════════════ -->
+<div class="page" id="page-income">
+<div style="padding:16px 0 8px"><h2 style="font-size:1.1em">💰 Income & Expense Analysis <span class="badge badge-b">YTD through Q3 2025</span></h2></div>
+
+<div class="g4" style="margin-bottom:20px" id="income-kpis"></div>
+
+<div class="g2">
+    <div class="card"><div class="card-h"><div class="card-t">📊 Revenue Breakdown</div></div>
+    <div class="card-b chart"><canvas id="revenueChart" height="260"></canvas></div></div>
+    
+    <div class="card"><div class="card-h"><div class="card-t">📊 Expense Breakdown</div></div>
+    <div class="card-b chart"><canvas id="expenseChart" height="260"></canvas></div></div>
+</div>
+
+<div class="card"><div class="card-h"><div class="card-t">📈 Income vs Expense Comparison (EdFed vs Peer Avg)</div></div>
+<div class="card-b chart"><canvas id="incomeCompareChart" height="200"></canvas></div></div>
+</div>
+
+<!-- ═══════════════ LOAN PORTFOLIO ═══════════════ -->
+<div class="page" id="page-loans">
+<div style="padding:16px 0 8px"><h2 style="font-size:1.1em">📋 Loan Portfolio Analysis <span class="badge badge-b">$1.03 Billion Outstanding</span></h2></div>
+
+<div class="g4" style="margin-bottom:20px" id="loan-kpis"></div>
+
+<div class="g2">
+    <div class="card"><div class="card-h"><div class="card-t">🥧 Loan Type Distribution</div></div>
+    <div class="card-b chart"><canvas id="loanPieChart" height="280"></canvas></div></div>
+    
+    <div class="card"><div class="card-h"><div class="card-t">📊 Loan Mix vs Peer Average</div></div>
+    <div class="card-b chart"><canvas id="loanCompareChart" height="280"></canvas></div></div>
+</div>
+
+<div class="card"><div class="card-h"><div class="card-t">🏆 Loan Portfolio Peer Comparison</div></div>
+<div class="card-b" style="padding:0 22px 18px"><table class="tbl" id="loanPeerTable"></table></div></div>
+</div>
+
+<!-- ═══════════════ PEER ANALYSIS ═══════════════ -->
+<div class="page" id="page-peers">
+<div style="padding:16px 0 8px"><h2 style="font-size:1.1em">🏆 Comprehensive Peer Analysis <span class="badge badge-b">72 Florida CUs · $100M+</span></h2></div>
+
+<div class="subtabs" id="peerSubtabs">
+    <div class="subtab active" data-sub="all">All FL CUs</div>
+    <div class="subtab" data-sub="similar">Similar Size ($1-3B)</div>
+    <div class="subtab" data-sub="miami">Miami-Dade</div>
+</div>
+
+<div class="card"><div class="card-h"><div class="card-t">📊 Interactive Peer Comparison</div><div>
+<select id="peerMetric" style="padding:4px 8px;border-radius:6px;border:1px solid var(--g300);font-size:.8em">
+    <option value="assets">Total Assets</option>
+    <option value="loans">Total Loans</option>
+    <option value="members">Members</option>
+    <option value="nwRatio">Net Worth Ratio</option>
+    <option value="loanDeposit">Loan/Deposit Ratio</option>
+    <option value="delinqRate">Delinquency Rate</option>
+    <option value="roa">ROA</option>
+    <option value="efficiency">Efficiency Ratio</option>
+</select>
+</div></div>
+<div class="card-b" style="padding:0 22px 18px"><table class="tbl" id="peerFullTable"></table></div></div>
+</div>
+
+<!-- ═══════════════ CAMEL SCORECARD ═══════════════ -->
+<div class="page" id="page-camel">
+<div style="padding:16px 0 8px"><h2 style="font-size:1.1em">🎯 CAMEL Rating Simulation <span class="badge badge-p">Exam Readiness Tool</span></h2></div>
+
+<div class="card"><div class="card-h"><div class="card-t">CAMEL Composite Score</div>
+<div class="badge badge-g" id="camelComposite">Loading...</div></div>
+<div class="card-b"><div class="camel-grid" id="camelGrid"></div></div></div>
+
+<div class="g2">
+    <div class="card"><div class="card-h"><div class="card-t">📋 Component Detail & Benchmarks</div></div>
+    <div class="card-b" id="camelDetail"></div></div>
+    
+    <div class="card"><div class="card-h"><div class="card-t">🕐 Examiner Watch Items</div></div>
+    <div class="card-b" id="camelWatch"></div></div>
+</div>
+</div>
+
+<!-- ═══════════════ GROWTH SIMULATOR ═══════════════ -->
+<div class="page" id="page-simulator">
+<div style="padding:16px 0 8px"><h2 style="font-size:1.1em">🔮 Growth Simulator <span class="badge badge-a">What-If Scenarios</span></h2></div>
+
+<div class="card"><div class="card-h"><div class="card-t">📐 Adjust Growth Parameters</div></div>
+<div class="card-b">
+<div class="g3">
+    <div>
+        <label style="font-size:.8em;font-weight:600;color:var(--g600)">Annual Member Growth: <span id="simMemVal">8%</span></label>
+        <input type="range" id="simMembers" min="0" max="20" value="8" style="width:100%;margin-top:4px">
+    </div>
+    <div>
+        <label style="font-size:.8em;font-weight:600;color:var(--g600)">Annual Loan Growth: <span id="simLoanVal">10%</span></label>
+        <input type="range" id="simLoans" min="0" max="25" value="10" style="width:100%;margin-top:4px">
+    </div>
+    <div>
+        <label style="font-size:.8em;font-weight:600;color:var(--g600)">Annual Deposit Growth: <span id="simDepVal">5%</span></label>
+        <input type="range" id="simDeposits" min="0" max="20" value="5" style="width:100%;margin-top:4px">
+    </div>
+</div>
+</div></div>
+
+<div class="g2">
+    <div class="card"><div class="card-h"><div class="card-t">📈 5-Year Projection</div></div>
+    <div class="card-b chart"><canvas id="simChart" height="280"></canvas></div></div>
+    
+    <div class="card"><div class="card-h"><div class="card-t">🎯 Projected Milestones</div></div>
+    <div class="card-b" id="simMilestones"></div></div>
+</div>
+</div>
+
+<div class="footer">
+CU Command Center — Built by CubanMolty 🇨🇺 for EdFed Business Technology<br>
+Data: NCUA Quarterly Call Reports (public) · All figures unaudited regulatory filings · Charter #176 · NCUA Insured · © 2026
+</div>
+
+<script>
+// ═══════════════ DATA ═══════════════
+const E = { // EdFed
+    assets: 1728331833, deposits: 1452726456, loans: 1034189513,
+    members: 116191, netWorth: 273123079, netIncome: 9058132,
+    loanIncome: 40841025, investIncome: 12802853, feeIncome: 5167063,
+    intExpense: 11373721, empComp: 23411054, officeOcc: 2490359,
+    officeOps: 6773192, loanServicing: 2920316, profServices: 1983462,
+    miscExp: 293603, delinquent: 6466566, numLoans: 55188,
+    usedAuto: 253773433, newAuto: 119226919, creditCards: 36439954,
+    unsecured: 39630076, provision: 0,
+    // Computed
+    get intIncome() { return this.loanIncome + this.investIncome },
+    get nonIntIncome() { return this.feeIncome },
+    get totalRevenue() { return this.intIncome + this.nonIntIncome },
+    get totalExpense() { return this.empComp + this.officeOcc + this.officeOps + this.loanServicing + this.profServices + this.miscExp },
+    get nwRatio() { return this.netWorth / this.assets * 100 },
+    get loanDeposit() { return this.loans / this.deposits * 100 },
+    get delinqRate() { return this.delinquent / this.loans * 100 },
+    get nim() { return (this.intIncome - this.intExpense) / this.assets * 100 * 4/3 },
+    get roa() { return this.netIncome / this.assets * 100 * 4/3 },
+    get efficiency() { return this.totalExpense / this.totalRevenue * 100 },
+    get autoLoans() { return this.usedAuto + this.newAuto },
+    get reLoans() { return this.loans - this.autoLoans - this.creditCards - this.unsecured },
+};
+
+const hist = [
+    {p:'Q4 2022',a:1601.8,d:1387.1,l:766.9,m:90696,nw:246.6},
+    {p:'Q4 2023',a:1607.1,d:1368.5,l:834.4,m:99280,nw:255.8},
+    {p:'Q4 2024',a:1675.5,d:1421.6,l:946.5,m:107813,nw:264.2},
+    {p:'Q3 2025',a:1728.3,d:1452.7,l:1034.2,m:116191,nw:273.1}
+];
+
+// FL CUs will be loaded inline (generated from NCUA data)
+const FL = [{"name":"SUNCOAST","city":"TAMPA","assets":19059134709,"deposits":16718223887,"loans":15006751558,"numLoans":815960,"members":1351821,"delinquent2mo":128168423,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":342285700,"netIncome602":0,"loanIncome":677286039,"investIncome":107080670,"feeIncome":50925915,"empComp":191588314,"officeOccupancy":18975985,"officeOps":31439350,"loanServicing":13757143,"profServices":62925955,"intExpense":276860151,"miscExp":11351267,"usedAuto":4333813816,"newAuto":2145801448,"creditCards":1077717392,"unsecured":825961642,"netWorth":1979883711,"netIncome":165764055,"intIncome":784366709,"nonIntIncome":140543197,"cuNumber":68645},{"name":"VYSTAR","city":"Jacksonville","assets":13900840817,"deposits":11065114244,"loans":10223313183,"numLoans":481529,"members":1037027,"delinquent2mo":143253514,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":371884520,"netIncome602":0,"loanIncome":447473573,"investIncome":76876228,"feeIncome":46892593,"empComp":189888061,"officeOccupancy":36609495,"officeOps":98250469,"loanServicing":4088660,"profServices":20088674,"intExpense":185030403,"miscExp":7233982,"usedAuto":1654742687,"newAuto":1191622652,"creditCards":665314655,"unsecured":343800242,"netWorth":1216103593,"netIncome":41110669,"intIncome":524349801,"nonIntIncome":141876439,"cuNumber":68490},{"name":"SPACE COAST","city":"Melbourne","assets":8908419963,"deposits":7316129365,"loans":7340895698,"numLoans":313660,"members":692562,"delinquent2mo":47148597,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":187707221,"netIncome602":62410290,"loanIncome":307334738,"investIncome":27077622,"feeIncome":25086854,"empComp":90814609,"officeOccupancy":15126078,"officeOps":45540542,"loanServicing":11893312,"profServices":8673823,"intExpense":114107127,"miscExp":5776240,"usedAuto":1828840727,"newAuto":1665039433,"creditCards":211064004,"unsecured":53629514,"netWorth":1001473391,"netIncome":62410290,"intIncome":334412360,"nonIntIncome":74876785,"cuNumber":67297},{"name":"MIDFLORIDA","city":"Lakeland","assets":8767241458,"deposits":7484920046,"loans":6910724420,"numLoans":353401,"members":487218,"delinquent2mo":23552592,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":179724747,"netIncome602":92094241,"loanIncome":281944596,"investIncome":35239369,"feeIncome":37855423,"empComp":96589334,"officeOccupancy":13198269,"officeOps":20027933,"loanServicing":10909805,"profServices":19024486,"intExpense":110667264,"miscExp":520513,"usedAuto":1344242953,"newAuto":1237326325,"creditCards":157430098,"unsecured":53052218,"netWorth":960052480,"netIncome":92094241,"intIncome":317130227,"nonIntIncome":97356025,"cuNumber":68600},{"name":"FAIRWINDS","city":"ORLANDO","assets":5099497498,"deposits":4589539398,"loans":3330613751,"numLoans":119023,"members":243453,"delinquent2mo":8151681,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":103882393,"netIncome602":44357949,"loanIncome":124859408,"investIncome":31414249,"feeIncome":14242411,"empComp":57581385,"officeOccupancy":6880700,"officeOps":14406002,"loanServicing":8721620,"profServices":9894336,"intExpense":62214944,"miscExp":248205,"usedAuto":398445091,"newAuto":201492561,"creditCards":99264130,"unsecured":23623428,"netWorth":548984562,"netIncome":44357949,"intIncome":156273657,"nonIntIncome":58413576,"cuNumber":68417},{"name":"GROW FINANCIAL","city":"Tampa","assets":3770681343,"deposits":3124869176,"loans":2886025453,"numLoans":128976,"members":291812,"delinquent2mo":13617182,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":95925301,"netIncome602":0,"loanIncome":128055964,"investIncome":20727645,"feeIncome":8674810,"empComp":52726545,"officeOccupancy":5466384,"officeOps":19392391,"loanServicing":7150917,"profServices":6067470,"intExpense":47037249,"miscExp":173997,"usedAuto":821625516,"newAuto":770457895,"creditCards":114144580,"unsecured":34087161,"netWorth":425274531,"netIncome":29448891,"intIncome":148746906,"nonIntIncome":41420805,"cuNumber":9976},{"name":"CAMPUS USA","city":"Gainesville","assets":3720920157,"deposits":3155361934,"loans":3071890842,"numLoans":103208,"members":172264,"delinquent2mo":12650640,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":61921936,"netIncome602":34984223,"loanIncome":122508011,"investIncome":13723531,"feeIncome":11043879,"empComp":34685610,"officeOccupancy":3848400,"officeOps":10362101,"loanServicing":4354963,"profServices":4491228,"intExpense":55635175,"miscExp":1582228,"usedAuto":883288921,"newAuto":518587376,"creditCards":54173221,"unsecured":86026249,"netWorth":462003811,"netIncome":34984223,"intIncome":136231542,"nonIntIncome":25940404,"cuNumber":68391},{"name":"ACHIEVA CREDIT UNION","city":"Dunedin","assets":3012814054,"deposits":2715711089,"loans":2288712417,"numLoans":198478,"members":211662,"delinquent2mo":5798164,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":78405438,"netIncome602":0,"loanIncome":100605676,"investIncome":12554840,"feeIncome":9709815,"empComp":45843451,"officeOccupancy":4760647,"officeOps":18417810,"loanServicing":2366011,"profServices":2062523,"intExpense":33958218,"miscExp":1067321,"usedAuto":757308434,"newAuto":495149963,"creditCards":110418787,"unsecured":52262615,"netWorth":305876604,"netIncome":20136643,"intIncome":113160516,"nonIntIncome":27815660,"cuNumber":60087},{"name":"EGLIN","city":"Fort Walton Bea","assets":2987972335,"deposits":2580429076,"loans":968960759,"numLoans":56886,"members":123744,"delinquent2mo":3639714,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":49455524,"netIncome602":0,"loanIncome":40712233,"investIncome":42494858,"feeIncome":4789312,"empComp":27819883,"officeOccupancy":3645097,"officeOps":12158432,"loanServicing":1537972,"profServices":1313701,"intExpense":26289804,"miscExp":410216,"usedAuto":357875581,"newAuto":119998134,"creditCards":66108826,"unsecured":26848733,"netWorth":378105221,"netIncome":20882803,"intIncome":83207091,"nonIntIncome":17423155,"cuNumber":9788},{"name":"ADDITION FINANCIAL","city":"Lake Mary","assets":2975541418,"deposits":2670606202,"loans":1654097742,"numLoans":83352,"members":193663,"delinquent2mo":12161883,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":64711911,"netIncome602":0,"loanIncome":67411554,"investIncome":29027342,"feeIncome":9097787,"empComp":31006873,"officeOccupancy":4514963,"officeOps":11940484,"loanServicing":4870120,"profServices":7470171,"intExpense":31581625,"miscExp":225750,"usedAuto":228018036,"newAuto":194655580,"creditCards":82235002,"unsecured":408211365,"netWorth":295221755,"netIncome":17693421,"intIncome":96438896,"nonIntIncome":29490452,"cuNumber":68702},{"name":"GTE","city":"TAMPA","assets":2914499508,"deposits":2556607253,"loans":2432044941,"numLoans":146562,"members":229159,"delinquent2mo":21759082,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":93204220,"netIncome602":0,"loanIncome":112224617,"investIncome":8019901,"feeIncome":21675670,"empComp":48532918,"officeOccupancy":5857787,"officeOps":19293279,"loanServicing":5172290,"profServices":1590178,"intExpense":37918771,"miscExp":2416226,"usedAuto":695964599,"newAuto":311163783,"creditCards":153637430,"unsecured":119575587,"netWorth":338707760,"netIncome":10180489,"intIncome":120244518,"nonIntIncome":43308962,"cuNumber":196},{"name":"COMMUNITY FIRST CREDIT UNION OF FLO","city":"JACKSONVILLE","assets":2885201271,"deposits":2489577669,"loans":2188361770,"numLoans":86735,"members":186039,"delinquent2mo":15358441,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":67184128,"netIncome602":0,"loanIncome":94583350,"investIncome":12264587,"feeIncome":12683496,"empComp":33422867,"officeOccupancy":4186354,"officeOps":7013285,"loanServicing":4344320,"profServices":11816045,"intExpense":30361228,"miscExp":561603,"usedAuto":382495824,"newAuto":441162777,"creditCards":111787208,"unsecured":135742176,"netWorth":373433027,"netIncome":21409148,"intIncome":106847937,"nonIntIncome":31358826,"cuNumber":67290},{"name":"PEN AIR","city":"Pensacola","assets":2660664584,"deposits":2297969756,"loans":1603759572,"numLoans":71679,"members":133994,"delinquent2mo":9662533,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":61792351,"netIncome602":0,"loanIncome":76896124,"investIncome":17267633,"feeIncome":10194980,"empComp":29272954,"officeOccupancy":3169972,"officeOps":12969715,"loanServicing":4212301,"profServices":6619070,"intExpense":32409489,"miscExp":2324600,"usedAuto":575737466,"newAuto":407749130,"creditCards":51821257,"unsecured":54680662,"netWorth":320333799,"netIncome":12598721,"intIncome":94163757,"nonIntIncome":22070804,"cuNumber":68734},{"name":"FLORIDA","city":"GAINESVILLE","assets":2531262143,"deposits":2135945033,"loans":2066348114,"numLoans":158788,"members":174618,"delinquent2mo":14186492,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":53151455,"netIncome602":28582428,"loanIncome":102420251,"investIncome":11194063,"feeIncome":14291312,"empComp":24878572,"officeOccupancy":2064255,"officeOps":9208381,"loanServicing":5224820,"profServices":7170922,"intExpense":41140832,"miscExp":312757,"usedAuto":640588996,"newAuto":553626403,"creditCards":100338630,"unsecured":87381224,"netWorth":325412848,"netIncome":28582428,"intIncome":113614314,"nonIntIncome":26369619,"cuNumber":60497},{"name":"ITHINK FINANCIAL","city":"Boca Raton","assets":2280401479,"deposits":1863748918,"loans":1798933976,"numLoans":40820,"members":116143,"delinquent2mo":12675906,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":46543881,"netIncome602":0,"loanIncome":76269937,"investIncome":8937951,"feeIncome":6364105,"empComp":28708071,"officeOccupancy":2733997,"officeOps":5888314,"loanServicing":1718487,"profServices":3524441,"intExpense":32910948,"miscExp":615071,"usedAuto":261384472,"newAuto":57100976,"creditCards":83905976,"unsecured":12611872,"netWorth":242342812,"netIncome":12349999,"intIncome":85207888,"nonIntIncome":14137777,"cuNumber":68663},{"name":"TYNDALL","city":"Panama City","assets":1888924322,"deposits":1615301286,"loans":982191405,"numLoans":62896,"members":111093,"delinquent2mo":1843667,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":32762663,"netIncome602":17937157,"loanIncome":40466168,"investIncome":22082425,"feeIncome":2300745,"empComp":18483342,"officeOccupancy":1994308,"officeOps":7653066,"loanServicing":458082,"profServices":2509261,"intExpense":22080816,"miscExp":506104,"usedAuto":184842374,"newAuto":139386576,"creditCards":77510693,"unsecured":21101849,"netWorth":245073660,"netIncome":17937156,"intIncome":62548593,"nonIntIncome":13234454,"cuNumber":10754},{"name":"EDUCATIONAL","city":"MIAMI","assets":1728331833,"deposits":1452726456,"loans":1034189513,"numLoans":55188,"members":116191,"delinquent2mo":6466566,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":41950732,"netIncome602":0,"loanIncome":40841025,"investIncome":12802853,"feeIncome":5167063,"empComp":23411054,"officeOccupancy":2490359,"officeOps":6773192,"loanServicing":1983462,"profServices":3485022,"intExpense":11373721,"miscExp":293603,"usedAuto":253773433,"newAuto":119226919,"creditCards":36439954,"unsecured":39630076,"netWorth":273123079,"netIncome":9058132,"intIncome":53643878,"nonIntIncome":14023693,"cuNumber":176},{"name":"PUBLIX EMPLOYEES","city":"LAKELAND","assets":1641291370,"deposits":1451041451,"loans":994555257,"numLoans":70409,"members":121710,"delinquent2mo":2582061,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":41046912,"netIncome602":0,"loanIncome":41356621,"investIncome":20450526,"feeIncome":4216779,"empComp":22379075,"officeOccupancy":1370383,"officeOps":8813125,"loanServicing":3429110,"profServices":2010369,"intExpense":18645234,"miscExp":1227953,"usedAuto":200140721,"newAuto":121662968,"creditCards":76557114,"unsecured":58669572,"netWorth":192315195,"netIncome":13536806,"intIncome":61807147,"nonIntIncome":14782119,"cuNumber":23020},{"name":"DADE COUNTY","city":"Sweetwater","assets":1473910016,"deposits":1136080563,"loans":1043386486,"numLoans":43866,"members":109384,"delinquent2mo":3040398,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":41351815,"netIncome602":0,"loanIncome":50200139,"investIncome":5475545,"feeIncome":19071363,"empComp":21249927,"officeOccupancy":3179925,"officeOps":3185864,"loanServicing":2219086,"profServices":8153742,"intExpense":13716168,"miscExp":1257390,"usedAuto":201581963,"newAuto":235954996,"creditCards":43206100,"unsecured":53702633,"netWorth":181542438,"netIncome":15586525,"intIncome":55675684,"nonIntIncome":19930874,"cuNumber":24508},{"name":"COMMUNITY CREDIT UNION OF FLORIDA","city":"Rockledge","assets":1444981016,"deposits":1226075143,"loans":1052936049,"numLoans":36988,"members":55626,"delinquent2mo":2907841,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":28933647,"netIncome602":5860617,"loanIncome":50972543,"investIncome":7648556,"feeIncome":3378904,"empComp":15601014,"officeOccupancy":1279624,"officeOps":3445889,"loanServicing":2181684,"profServices":4231654,"intExpense":24955453,"miscExp":585646,"usedAuto":135563175,"newAuto":134259740,"creditCards":29306691,"unsecured":22717505,"netWorth":157918469,"netIncome":5860616,"intIncome":56518085,"nonIntIncome":7216412,"cuNumber":60816},{"name":"FIRST FLORIDA","city":"Jacksonville","assets":1432994780,"deposits":1093144460,"loans":1019047837,"numLoans":69674,"members":62918,"delinquent2mo":5968709,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":31218549,"netIncome602":0,"loanIncome":40733725,"investIncome":6205692,"feeIncome":4981524,"empComp":16335062,"officeOccupancy":2270846,"officeOps":5325220,"loanServicing":1853887,"profServices":2905688,"intExpense":17468942,"miscExp":1091552,"usedAuto":238102757,"newAuto":96035990,"creditCards":22235125,"unsecured":77304126,"netWorth":183289812,"netIncome":4881099,"intIncome":46939417,"nonIntIncome":10033020,"cuNumber":61170},{"name":"LAUNCH CREDIT UNION","city":"MERRITT ISLAND","assets":1425707611,"deposits":1179544371,"loans":1083229920,"numLoans":86504,"members":86176,"delinquent2mo":3630239,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":45869436,"netIncome602":4768672,"loanIncome":45890906,"investIncome":11197035,"feeIncome":6728958,"empComp":25431548,"officeOccupancy":2691396,"officeOps":4526880,"loanServicing":2099711,"profServices":8092005,"intExpense":14999797,"miscExp":952379,"usedAuto":136745805,"newAuto":81475677,"creditCards":47893003,"unsecured":45421081,"netWorth":129732780,"netIncome":4768670,"intIncome":57087941,"nonIntIncome":13582459,"cuNumber":68716},{"name":"USF FEDERAL CREDIT UNION","city":"Tampa","assets":1290083787,"deposits":1086410554,"loans":1118804987,"numLoans":48548,"members":78350,"delinquent2mo":9770393,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":35090537,"netIncome602":2564641,"loanIncome":49826237,"investIncome":4403285,"feeIncome":4683586,"empComp":19489842,"officeOccupancy":1696571,"officeOps":3641730,"loanServicing":3173911,"profServices":4075138,"intExpense":17159338,"miscExp":423892,"usedAuto":392020292,"newAuto":117778750,"creditCards":48372582,"unsecured":41800719,"netWorth":137421650,"netIncome":2564640,"intIncome":54034783,"nonIntIncome":9434120,"cuNumber":24223},{"name":"GULF WINDS","city":"PENSACOLA","assets":1235543639,"deposits":1070993965,"loans":862286059,"numLoans":47395,"members":72992,"delinquent2mo":5053967,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":32387285,"netIncome602":1475144,"loanIncome":42696654,"investIncome":4323258,"feeIncome":6219671,"empComp":15124805,"officeOccupancy":1516857,"officeOps":6322732,"loanServicing":2261888,"profServices":4726796,"intExpense":12866896,"miscExp":933829,"usedAuto":355204757,"newAuto":94605853,"creditCards":33562689,"unsecured":62498537,"netWorth":128185500,"netIncome":10312562,"intIncome":47019912,"nonIntIncome":15740176,"cuNumber":68694},{"name":"FIRST COMMERCE","city":"Tallahassee","assets":1149967833,"deposits":986704567,"loans":889503599,"numLoans":28131,"members":71850,"delinquent2mo":5863895,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":30508405,"netIncome602":4498493,"loanIncome":39452856,"investIncome":3585031,"feeIncome":4959894,"empComp":13939594,"officeOccupancy":2402760,"officeOps":9444426,"loanServicing":1417720,"profServices":799530,"intExpense":15499609,"miscExp":522012,"usedAuto":267222065,"newAuto":139528343,"creditCards":7899857,"unsecured":12753120,"netWorth":119548329,"netIncome":4498493,"intIncome":43037887,"nonIntIncome":11210107,"cuNumber":68301},{"name":"MCCOY","city":"ORLANDO","assets":1000909377,"deposits":863947616,"loans":677276731,"numLoans":33902,"members":80927,"delinquent2mo":2724042,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":26216352,"netIncome602":0,"loanIncome":27420504,"investIncome":4700065,"feeIncome":7641888,"empComp":11141002,"officeOccupancy":1815239,"officeOps":4911459,"loanServicing":2936436,"profServices":3056497,"intExpense":8707222,"miscExp":907183,"usedAuto":168384566,"newAuto":264685458,"creditCards":17638207,"unsecured":20573546,"netWorth":103172011,"netIncome":4511992,"intIncome":32120569,"nonIntIncome":12303211,"cuNumber":9915},{"name":"BRIGHTSTAR","city":"Fort Lauderdale","assets":994401389,"deposits":853295966,"loans":842860136,"numLoans":157816,"members":59314,"delinquent2mo":4610735,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":24997613,"netIncome602":0,"loanIncome":35522968,"investIncome":1853780,"feeIncome":4676786,"empComp":11691374,"officeOccupancy":2424404,"officeOps":6875232,"loanServicing":1746650,"profServices":419562,"intExpense":12105065,"miscExp":457633,"usedAuto":78456431,"newAuto":32851261,"creditCards":45244482,"unsecured":6874830,"netWorth":87017312,"netIncome":5597728,"intIncome":37376748,"nonIntIncome":9504562,"cuNumber":67347},{"name":"TROPICAL FINANCIAL","city":"MIRAMAR","assets":992159491,"deposits":877818971,"loans":817124270,"numLoans":35309,"members":63200,"delinquent2mo":3931096,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":28160354,"netIncome602":3667652,"loanIncome":32811979,"investIncome":6129464,"feeIncome":2904826,"empComp":14323384,"officeOccupancy":1984877,"officeOps":7234860,"loanServicing":1392927,"profServices":1373506,"intExpense":10103562,"miscExp":331632,"usedAuto":297804990,"newAuto":109527844,"creditCards":14552187,"unsecured":23437086,"netWorth":90802695,"netIncome":3667653,"intIncome":38941443,"nonIntIncome":6218093,"cuNumber":68476},{"name":"POWER FINANCIAL","city":"Pembroke Pines","assets":945105404,"deposits":764874030,"loans":692992939,"numLoans":15801,"members":33817,"delinquent2mo":13352293,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":17847772,"netIncome602":0,"loanIncome":26597739,"investIncome":4254646,"feeIncome":2348526,"empComp":10201598,"officeOccupancy":1036941,"officeOps":2227316,"loanServicing":491783,"profServices":2439983,"intExpense":7285814,"miscExp":129693,"usedAuto":45032849,"newAuto":9062713,"creditCards":6964226,"unsecured":9127797,"netWorth":133874696,"netIncome":7587561,"intIncome":30852385,"nonIntIncome":3069776,"cuNumber":68445},{"name":"RADIANT","city":"Gainesville","assets":895123083,"deposits":768292562,"loans":681124021,"numLoans":29327,"members":49621,"delinquent2mo":4304351,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":25637797,"netIncome602":4631655,"loanIncome":29928305,"investIncome":4765555,"feeIncome":3844761,"empComp":13769440,"officeOccupancy":1677477,"officeOps":6046574,"loanServicing":2208405,"profServices":680552,"intExpense":10677053,"miscExp":161897,"usedAuto":103092211,"newAuto":73539973,"creditCards":42645963,"unsecured":22993946,"netWorth":81426884,"netIncome":4631655,"intIncome":35017755,"nonIntIncome":9294819,"cuNumber":68723},{"name":"ENVISION","city":"Tallahassee","assets":829353275,"deposits":728747020,"loans":579191960,"numLoans":143024,"members":63238,"delinquent2mo":8465256,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":51659436,"netIncome602":-10736897,"loanIncome":26609541,"investIncome":4123269,"feeIncome":6462279,"empComp":20626696,"officeOccupancy":2570471,"officeOps":14971190,"loanServicing":1980870,"profServices":5342830,"intExpense":6521475,"miscExp":3468583,"usedAuto":177955220,"newAuto":94301690,"creditCards":2269910,"unsecured":51697397,"netWorth":84715761,"netIncome":-10736897,"intIncome":30732810,"nonIntIncome":24043140,"cuNumber":67329},{"name":"WE FLORIDA FINANCIAL","city":"Fort Lauderdale","assets":719471613,"deposits":645850307,"loans":463611428,"numLoans":25865,"members":41036,"delinquent2mo":3389778,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":17498496,"netIncome602":0,"loanIncome":21011777,"investIncome":4519838,"feeIncome":3065793,"empComp":7992269,"officeOccupancy":1308677,"officeOps":2236969,"loanServicing":1341547,"profServices":4254072,"intExpense":9356057,"miscExp":207556,"usedAuto":79846207,"newAuto":38185342,"creditCards":14931746,"unsecured":7586870,"netWorth":73402076,"netIncome":1212545,"intIncome":25531615,"nonIntIncome":6384651,"cuNumber":61525},{"name":"RADIFI","city":"Jacksonville","assets":704913184,"deposits":550436813,"loans":530645029,"numLoans":19113,"members":41974,"delinquent2mo":2597838,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":18996148,"netIncome602":1285262,"loanIncome":21762141,"investIncome":3406292,"feeIncome":2069674,"empComp":9530523,"officeOccupancy":1273165,"officeOps":4124398,"loanServicing":1702190,"profServices":863138,"intExpense":7152438,"miscExp":187032,"usedAuto":82731905,"newAuto":55699811,"creditCards":30573655,"unsecured":16742488,"netWorth":65429360,"netIncome":1465504,"intIncome":25165363,"nonIntIncome":5105334,"cuNumber":340},{"name":"INSIGHT","city":"WINTER SPRINGS","assets":654803458,"deposits":576699894,"loans":378936097,"numLoans":9808,"members":43641,"delinquent2mo":3864517,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":18872829,"netIncome602":-975253,"loanIncome":14890336,"investIncome":5668046,"feeIncome":2215279,"empComp":9131699,"officeOccupancy":2036290,"officeOps":1339358,"loanServicing":829025,"profServices":4348069,"intExpense":5020445,"miscExp":242781,"usedAuto":109270972,"newAuto":14547112,"creditCards":0,"unsecured":5713437,"netWorth":65219632,"netIncome":-975253,"intIncome":20558382,"nonIntIncome":4470328,"cuNumber":67344},{"name":"INNOVATIONS FINANCIAL","city":"Panama City","assets":625332972,"deposits":559977603,"loans":510785382,"numLoans":17211,"members":26822,"delinquent2mo":658222,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":17877436,"netIncome602":3873746,"loanIncome":22527316,"investIncome":2484215,"feeIncome":4608532,"empComp":9609590,"officeOccupancy":960521,"officeOps":3108791,"loanServicing":970707,"profServices":2167992,"intExpense":8992240,"miscExp":464560,"usedAuto":97310292,"newAuto":26177072,"creditCards":15740019,"unsecured":5579642,"netWorth":59065198,"netIncome":3873746,"intIncome":25011531,"nonIntIncome":7349901,"cuNumber":68732},{"name":"FLORIDACENTRAL","city":"Tampa","assets":592879613,"deposits":565391481,"loans":403893955,"numLoans":67924,"members":43181,"delinquent2mo":2044493,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":15652855,"netIncome602":0,"loanIncome":14822225,"investIncome":4670876,"feeIncome":2053682,"empComp":8330397,"officeOccupancy":1456279,"officeOps":3524862,"loanServicing":866672,"profServices":232059,"intExpense":5476626,"miscExp":305587,"usedAuto":125617500,"newAuto":53805756,"creditCards":6958703,"unsecured":8191127,"netWorth":47599136,"netIncome":1272732,"intIncome":19493101,"nonIntIncome":4536943,"cuNumber":67668},{"name":"CHAMPIONS FIRST","city":"Tallahassee","assets":510189176,"deposits":452895930,"loans":407766926,"numLoans":20440,"members":32540,"delinquent2mo":3102293,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":12611845,"netIncome602":3074792,"loanIncome":17190927,"investIncome":1642293,"feeIncome":2160571,"empComp":6451251,"officeOccupancy":618391,"officeOps":848251,"loanServicing":1482467,"profServices":2328728,"intExpense":6193127,"miscExp":303422,"usedAuto":145439150,"newAuto":56803841,"creditCards":7563015,"unsecured":28461100,"netWorth":53738119,"netIncome":3074792,"intIncome":18833220,"nonIntIncome":4575795,"cuNumber":67874},{"name":"TRAX","city":"Tampa","assets":495449300,"deposits":428322844,"loans":204882965,"numLoans":17089,"members":45049,"delinquent2mo":3607574,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":12439068,"netIncome602":0,"loanIncome":10168537,"investIncome":6398975,"feeIncome":2921727,"empComp":5529818,"officeOccupancy":660713,"officeOps":860955,"loanServicing":790373,"profServices":2770405,"intExpense":6559670,"miscExp":1052562,"usedAuto":73452273,"newAuto":25635093,"creditCards":5835486,"unsecured":6586016,"netWorth":62130744,"netIncome":997509,"intIncome":16567512,"nonIntIncome":5705732,"cuNumber":24703},{"name":"VELOCITY COMMUNITY","city":"PALM BEACH GARD","assets":480748002,"deposits":414515785,"loans":336640122,"numLoans":17635,"members":25157,"delinquent2mo":1469627,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":13412183,"netIncome602":1792523,"loanIncome":14365361,"investIncome":2999446,"feeIncome":1027001,"empComp":6530930,"officeOccupancy":587693,"officeOps":1368712,"loanServicing":972067,"profServices":3062196,"intExpense":3847030,"miscExp":279791,"usedAuto":92141296,"newAuto":51268135,"creditCards":19094706,"unsecured":8418647,"netWorth":59660962,"netIncome":1792523,"intIncome":17364807,"nonIntIncome":3343400,"cuNumber":12458},{"name":"TAMPA BAY","city":"Tampa","assets":475635359,"deposits":416555322,"loans":374443225,"numLoans":19503,"members":36616,"delinquent2mo":7265139,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":13337558,"netIncome602":0,"loanIncome":16639222,"investIncome":3095564,"feeIncome":1971535,"empComp":6236822,"officeOccupancy":859055,"officeOps":2509080,"loanServicing":2046392,"profServices":930214,"intExpense":6282924,"miscExp":41086,"usedAuto":104552186,"newAuto":72704586,"creditCards":13702390,"unsecured":20199851,"netWorth":49596462,"netIncome":888837,"intIncome":19734786,"nonIntIncome":3749533,"cuNumber":352},{"name":"SAN ANTONIO CITIZENS","city":"SAN ANTONIO","assets":394529653,"deposits":352837767,"loans":156913376,"numLoans":9920,"members":18938,"delinquent2mo":143142,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":8739253,"netIncome602":0,"loanIncome":7775487,"investIncome":5692840,"feeIncome":1013242,"empComp":4054086,"officeOccupancy":912263,"officeOps":889538,"loanServicing":672976,"profServices":1558634,"intExpense":3169249,"miscExp":137392,"usedAuto":34080218,"newAuto":20777885,"creditCards":7495005,"unsecured":4753448,"netWorth":41435856,"netIncome":3891084,"intIncome":13468327,"nonIntIncome":2678514,"cuNumber":10699},{"name":"ORLANDO","city":"Orlando","assets":356480557,"deposits":304443055,"loans":256214255,"numLoans":58853,"members":27355,"delinquent2mo":2630689,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":11401780,"netIncome602":349683,"loanIncome":11484818,"investIncome":2099876,"feeIncome":1650042,"empComp":6313303,"officeOccupancy":476996,"officeOps":2003867,"loanServicing":564196,"profServices":1431668,"intExpense":3557540,"miscExp":337520,"usedAuto":46001812,"newAuto":18953578,"creditCards":11879651,"unsecured":10328597,"netWorth":31771895,"netIncome":349684,"intIncome":13584694,"nonIntIncome":3633893,"cuNumber":68706},{"name":"PANHANDLE","city":"Panama City","assets":349126786,"deposits":300268120,"loans":202651521,"numLoans":6791,"members":16220,"delinquent2mo":559508,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":9792463,"netIncome602":0,"loanIncome":9656719,"investIncome":2808647,"feeIncome":1284947,"empComp":5134823,"officeOccupancy":497576,"officeOps":779609,"loanServicing":720800,"profServices":2200036,"intExpense":2824121,"miscExp":43666,"usedAuto":35654823,"newAuto":13932392,"creditCards":4719154,"unsecured":4392787,"netWorth":46072018,"netIncome":2686103,"intIncome":12465366,"nonIntIncome":3340607,"cuNumber":68720},{"name":"MEMBERS FIRST CREDIT UNION OF FLORI","city":"Pensacola","assets":306424953,"deposits":259913194,"loans":137568485,"numLoans":115271,"members":19848,"delinquent2mo":471097,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":8198923,"netIncome602":0,"loanIncome":6239039,"investIncome":4137376,"feeIncome":1658651,"empComp":4230639,"officeOccupancy":524518,"officeOps":2065821,"loanServicing":527251,"profServices":194999,"intExpense":1490879,"miscExp":367146,"usedAuto":45925234,"newAuto":15167274,"creditCards":14074161,"unsecured":2995586,"netWorth":45109479,"netIncome":3330412,"intIncome":10376415,"nonIntIncome":3385859,"cuNumber":61160},{"name":"GUARDIANS","city":"WEST PALM BEACH","assets":299045598,"deposits":246708728,"loans":215838958,"numLoans":13465,"members":36684,"delinquent2mo":330904,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":11085374,"netIncome602":2586260,"loanIncome":9063345,"investIncome":2026046,"feeIncome":2589042,"empComp":4702506,"officeOccupancy":641878,"officeOps":4166129,"loanServicing":519695,"profServices":211790,"intExpense":1432754,"miscExp":154707,"usedAuto":55672917,"newAuto":20642425,"creditCards":11682907,"unsecured":14689660,"netWorth":43864162,"netIncome":2586259,"intIncome":11089391,"nonIntIncome":5269496,"cuNumber":67521},{"name":"LOYALTY","city":"Pensacola","assets":295244067,"deposits":259448279,"loans":161910874,"numLoans":13612,"members":19842,"delinquent2mo":1175237,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":10187462,"netIncome602":0,"loanIncome":8434479,"investIncome":3126586,"feeIncome":1963854,"empComp":4710997,"officeOccupancy":766242,"officeOps":2848979,"loanServicing":947543,"profServices":386023,"intExpense":1548017,"miscExp":102831,"usedAuto":45653454,"newAuto":13065320,"creditCards":13363485,"unsecured":10951509,"netWorth":33112223,"netIncome":2360438,"intIncome":11561065,"nonIntIncome":3858261,"cuNumber":62417},{"name":"HARVESTERS","city":"Cantonment","assets":291950363,"deposits":266941315,"loans":233278570,"numLoans":10983,"members":32854,"delinquent2mo":1387306,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":12670433,"netIncome602":672851,"loanIncome":11307499,"investIncome":1010822,"feeIncome":3962834,"empComp":6326507,"officeOccupancy":550279,"officeOps":2111582,"loanServicing":678723,"profServices":2126094,"intExpense":2568537,"miscExp":460161,"usedAuto":97235265,"newAuto":41447677,"creditCards":5701611,"unsecured":3689446,"netWorth":23549145,"netIncome":672850,"intIncome":12318321,"nonIntIncome":4188884,"cuNumber":24967},{"name":"ALIVE","city":"Jacksonville","assets":279750843,"deposits":246754705,"loans":161447307,"numLoans":7504,"members":18665,"delinquent2mo":1394442,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":7357176,"netIncome602":0,"loanIncome":6431255,"investIncome":2380528,"feeIncome":1321551,"empComp":3775725,"officeOccupancy":486438,"officeOps":921496,"loanServicing":274124,"profServices":1471829,"intExpense":1965499,"miscExp":105304,"usedAuto":37841435,"newAuto":37320545,"creditCards":0,"unsecured":16270449,"netWorth":32466472,"netIncome":1648288,"intIncome":8811783,"nonIntIncome":3090237,"cuNumber":67316},{"name":"JETSTREAM","city":"Miami Lakes","assets":269717811,"deposits":233300279,"loans":226649776,"numLoans":7510,"members":14181,"delinquent2mo":675995,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":8526731,"netIncome602":0,"loanIncome":9678549,"investIncome":964229,"feeIncome":862418,"empComp":4527535,"officeOccupancy":790158,"officeOps":593832,"loanServicing":935143,"profServices":1263422,"intExpense":2242980,"miscExp":125249,"usedAuto":34031106,"newAuto":20677499,"creditCards":3525960,"unsecured":9364453,"netWorth":29678685,"netIncome":1769255,"intIncome":10642778,"nonIntIncome":2665151,"cuNumber":24718},{"name":"GOLD COAST","city":"PALM SPRINGS","assets":259003003,"deposits":229778904,"loans":117250108,"numLoans":8268,"members":19840,"delinquent2mo":444232,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":7847474,"netIncome602":1242417,"loanIncome":4606727,"investIncome":2847842,"feeIncome":945956,"empComp":3428861,"officeOccupancy":456950,"officeOps":2865470,"loanServicing":232698,"profServices":537534,"intExpense":256146,"miscExp":94643,"usedAuto":34802734,"newAuto":18948454,"creditCards":0,"unsecured":10941197,"netWorth":30393340,"netIncome":1242417,"intIncome":7454569,"nonIntIncome":2356468,"cuNumber":967},{"name":"KEYS","city":"Key West","assets":250029093,"deposits":216194079,"loans":177890968,"numLoans":13933,"members":18316,"delinquent2mo":3155739,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":8008347,"netIncome602":0,"loanIncome":9298058,"investIncome":1135225,"feeIncome":859915,"empComp":3576674,"officeOccupancy":682099,"officeOps":2239813,"loanServicing":458051,"profServices":379155,"intExpense":1567755,"miscExp":325736,"usedAuto":34783476,"newAuto":21593903,"creditCards":9832706,"unsecured":20270788,"netWorth":27708702,"netIncome":820004,"intIncome":10433283,"nonIntIncome":2500823,"cuNumber":4135},{"name":"UNIVERSITY","city":"MIAMI","assets":234893420,"deposits":206912426,"loans":95348705,"numLoans":3437,"members":15903,"delinquent2mo":520193,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":5045406,"netIncome602":437693,"loanIncome":3430321,"investIncome":2635177,"feeIncome":551690,"empComp":2242511,"officeOccupancy":559720,"officeOps":658323,"loanServicing":336050,"profServices":824055,"intExpense":1498999,"miscExp":129154,"usedAuto":4805716,"newAuto":5440738,"creditCards":8777757,"unsecured":3496859,"netWorth":24300232,"netIncome":437693,"intIncome":6065498,"nonIntIncome":1083589,"cuNumber":67348},{"name":"COMMUNITY SOUTH","city":"CHIPLEY","assets":233274184,"deposits":201045472,"loans":186874863,"numLoans":9152,"members":14996,"delinquent2mo":1075179,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":7717213,"netIncome602":1252254,"loanIncome":8797523,"investIncome":663993,"feeIncome":3132700,"empComp":3496822,"officeOccupancy":566909,"officeOps":980016,"loanServicing":1080654,"profServices":1441044,"intExpense":3020800,"miscExp":-158013,"usedAuto":31238144,"newAuto":16529975,"creditCards":6491593,"unsecured":16461079,"netWorth":30632425,"netIncome":1252253,"intIncome":9461516,"nonIntIncome":3113931,"cuNumber":67434},{"name":"SANTA ROSA COUNTY","city":"MILTON","assets":211462260,"deposits":186020948,"loans":85283608,"numLoans":6834,"members":13730,"delinquent2mo":767239,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":5307804,"netIncome602":0,"loanIncome":4239683,"investIncome":2875414,"feeIncome":1026767,"empComp":2533971,"officeOccupancy":208334,"officeOps":736528,"loanServicing":531210,"profServices":909052,"intExpense":1539887,"miscExp":92611,"usedAuto":33677511,"newAuto":14268238,"creditCards":9455842,"unsecured":5206247,"netWorth":28532627,"netIncome":1739397,"intIncome":7115097,"nonIntIncome":2045991,"cuNumber":11780},{"name":"MIAMI POSTAL SERVICE","city":"Miami","assets":191305076,"deposits":171567621,"loans":116576173,"numLoans":107074,"members":13063,"delinquent2mo":653535,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":5310126,"netIncome602":0,"loanIncome":5489887,"investIncome":1307288,"feeIncome":1043645,"empComp":2375740,"officeOccupancy":238545,"officeOps":1050752,"loanServicing":1012082,"profServices":325017,"intExpense":1872609,"miscExp":73650,"usedAuto":41614977,"newAuto":24364199,"creditCards":3458695,"unsecured":2379170,"netWorth":17915301,"netIncome":-1850603,"intIncome":6797175,"nonIntIncome":1109657,"cuNumber":67330},{"name":"MIAMI FIREFIGHTERS","city":"MIAMI","assets":184094851,"deposits":159943726,"loans":131318641,"numLoans":4482,"members":6102,"delinquent2mo":519396,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":3039613,"netIncome602":1554347,"loanIncome":4968353,"investIncome":1722386,"feeIncome":197090,"empComp":1357157,"officeOccupancy":59887,"officeOps":713093,"loanServicing":311920,"profServices":441459,"intExpense":2579558,"miscExp":9002,"usedAuto":13923751,"newAuto":29120883,"creditCards":4301001,"unsecured":2265024,"netWorth":22354828,"netIncome":1347847,"intIncome":6690739,"nonIntIncome":482779,"cuNumber":872},{"name":"PINELLAS","city":"Largo","assets":171004881,"deposits":148343060,"loans":97415549,"numLoans":4338,"members":11065,"delinquent2mo":460403,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":4260068,"netIncome602":0,"loanIncome":3613800,"investIncome":1682682,"feeIncome":378098,"empComp":1801631,"officeOccupancy":326282,"officeOps":982514,"loanServicing":230691,"profServices":765768,"intExpense":1231142,"miscExp":66028,"usedAuto":24066035,"newAuto":7726319,"creditCards":3043354,"unsecured":1047351,"netWorth":21556153,"netIncome":1020540,"intIncome":5296482,"nonIntIncome":1306494,"cuNumber":10880},{"name":"CALHOUN LIBERTY","city":"Blountstown","assets":166656500,"deposits":144784972,"loans":122479583,"numLoans":4813,"members":9181,"delinquent2mo":248035,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":5426873,"netIncome602":1143277,"loanIncome":6451304,"investIncome":1054907,"feeIncome":615610,"empComp":2368311,"officeOccupancy":286876,"officeOps":1042970,"loanServicing":191691,"profServices":1019035,"intExpense":2103144,"miscExp":121910,"usedAuto":20434104,"newAuto":12134724,"creditCards":1662450,"unsecured":9559678,"netWorth":17921806,"netIncome":1143277,"intIncome":7506211,"nonIntIncome":1467819,"cuNumber":67431},{"name":"BLUE COAST","city":"Perry","assets":163524790,"deposits":143311335,"loans":122184425,"numLoans":7406,"members":11224,"delinquent2mo":748518,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":4962452,"netIncome602":0,"loanIncome":5607454,"investIncome":953570,"feeIncome":516069,"empComp":2378141,"officeOccupancy":329599,"officeOps":1025600,"loanServicing":345940,"profServices":538016,"intExpense":1576349,"miscExp":181499,"usedAuto":39421770,"newAuto":11601107,"creditCards":5706413,"unsecured":3710023,"netWorth":17128480,"netIncome":904764,"intIncome":6561024,"nonIntIncome":1460286,"cuNumber":11154},{"name":"PRIORITY ONE CREDIT UNION","city":"Sunrise","assets":162522654,"deposits":143464754,"loans":122628440,"numLoans":132970,"members":9645,"delinquent2mo":324280,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":4559663,"netIncome602":0,"loanIncome":5793745,"investIncome":731941,"feeIncome":673544,"empComp":2111192,"officeOccupancy":248371,"officeOps":304230,"loanServicing":430184,"profServices":1168040,"intExpense":1582992,"miscExp":139961,"usedAuto":26473789,"newAuto":15976095,"creditCards":3297108,"unsecured":7757522,"netWorth":16208996,"netIncome":1366970,"intIncome":6525686,"nonIntIncome":1364122,"cuNumber":67444},{"name":"HELLO","city":"Panama City","assets":158610321,"deposits":133156044,"loans":104439395,"numLoans":6222,"members":11126,"delinquent2mo":479702,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":4981865,"netIncome602":715576,"loanIncome":4748672,"investIncome":676020,"feeIncome":894413,"empComp":2235430,"officeOccupancy":293201,"officeOps":704463,"loanServicing":499037,"profServices":712943,"intExpense":744884,"miscExp":172701,"usedAuto":23686623,"newAuto":24988364,"creditCards":4603540,"unsecured":3162030,"netWorth":22575598,"netIncome":715574,"intIncome":5424692,"nonIntIncome":2064831,"cuNumber":63262},{"name":"FIRST CHOICE","city":"WEST PALM BEACH","assets":151971418,"deposits":138644377,"loans":77044387,"numLoans":128723,"members":8409,"delinquent2mo":247253,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":3053528,"netIncome602":0,"loanIncome":3069098,"investIncome":1619231,"feeIncome":392717,"empComp":1542191,"officeOccupancy":143493,"officeOps":469990,"loanServicing":404688,"profServices":393497,"intExpense":1382793,"miscExp":7323,"usedAuto":27971077,"newAuto":16434780,"creditCards":1677407,"unsecured":927785,"netWorth":16342535,"netIncome":398866,"intIncome":4688329,"nonIntIncome":626973,"cuNumber":67725},{"name":"FIRST COAST COMMUNITY","city":"Palatka","assets":149676226,"deposits":129202633,"loans":47634663,"numLoans":4972,"members":11834,"delinquent2mo":167682,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":4117636,"netIncome602":0,"loanIncome":2533497,"investIncome":2253610,"feeIncome":932371,"empComp":1983632,"officeOccupancy":284431,"officeOps":756364,"loanServicing":127913,"profServices":668945,"intExpense":558924,"miscExp":122876,"usedAuto":16319251,"newAuto":8173955,"creditCards":1990118,"unsecured":4048266,"netWorth":19807118,"netIncome":927777,"intIncome":4787107,"nonIntIncome":1034532,"cuNumber":68524},{"name":"JM ASSOCIATES","city":"Jacksonville","assets":144062097,"deposits":124844242,"loans":99115563,"numLoans":8958,"members":8808,"delinquent2mo":1044812,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":5001975,"netIncome602":303757,"loanIncome":5131706,"investIncome":914698,"feeIncome":350122,"empComp":2572066,"officeOccupancy":0,"officeOps":281988,"loanServicing":655774,"profServices":891284,"intExpense":1815644,"miscExp":356414,"usedAuto":18755130,"newAuto":12573685,"creditCards":7590473,"unsecured":15287530,"netWorth":22147065,"netIncome":303757,"intIncome":6046404,"nonIntIncome":1824972,"cuNumber":23709},{"name":"FLORIDA WEST COAST","city":"BRANDON","assets":137915108,"deposits":121768500,"loans":71724580,"numLoans":124619,"members":11139,"delinquent2mo":326594,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":3694181,"netIncome602":0,"loanIncome":3235901,"investIncome":1330043,"feeIncome":1033081,"empComp":1749554,"officeOccupancy":207626,"officeOps":541499,"loanServicing":240886,"profServices":653641,"intExpense":1289085,"miscExp":75772,"usedAuto":29198860,"newAuto":16685110,"creditCards":4136123,"unsecured":3402836,"netWorth":16461690,"netIncome":599444,"intIncome":4565944,"nonIntIncome":1202040,"cuNumber":67337},{"name":"TRU FI","city":"Macclenny","assets":135501091,"deposits":117521498,"loans":85317218,"numLoans":99517,"members":7882,"delinquent2mo":60385,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":3836167,"netIncome602":1876988,"loanIncome":4525263,"investIncome":887809,"feeIncome":1551431,"empComp":1477978,"officeOccupancy":184506,"officeOps":508069,"loanServicing":723499,"profServices":688871,"intExpense":1346635,"miscExp":45403,"usedAuto":16537653,"newAuto":9459237,"creditCards":2372499,"unsecured":5111206,"netWorth":16650498,"netIncome":1876989,"intIncome":5413072,"nonIntIncome":1666038,"cuNumber":68691},{"name":"OKALOOSA COUNTY TEACHERS","city":"CRESTVIEW","assets":130629066,"deposits":116905726,"loans":56428696,"numLoans":5222,"members":9775,"delinquent2mo":690258,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":3795002,"netIncome602":0,"loanIncome":3327867,"investIncome":1476439,"feeIncome":540228,"empComp":1859153,"officeOccupancy":172618,"officeOps":358842,"loanServicing":243337,"profServices":965653,"intExpense":1210635,"miscExp":48279,"usedAuto":9680067,"newAuto":30934065,"creditCards":2364825,"unsecured":5649937,"netWorth":12567147,"netIncome":445795,"intIncome":4804306,"nonIntIncome":1000545,"cuNumber":13534},{"name":"COASTLINE","city":"Jacksonville","assets":129740066,"deposits":117690939,"loans":87498246,"numLoans":5864,"members":10562,"delinquent2mo":386791,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":4671520,"netIncome602":0,"loanIncome":4029316,"investIncome":643429,"feeIncome":262138,"empComp":2040933,"officeOccupancy":371835,"officeOps":889002,"loanServicing":244795,"profServices":822489,"intExpense":804807,"miscExp":75053,"usedAuto":27207714,"newAuto":19035755,"creditCards":4074538,"unsecured":2999420,"netWorth":15609287,"netIncome":396515,"intIncome":4672745,"nonIntIncome":1511869,"cuNumber":1115},{"name":"BAPTIST HEALTH SOUTH FLORIDA","city":"Miami","assets":127017074,"deposits":111243161,"loans":94496899,"numLoans":8455,"members":13795,"delinquent2mo":859234,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":5125586,"netIncome602":631322,"loanIncome":5701731,"investIncome":634196,"feeIncome":1401939,"empComp":2910367,"officeOccupancy":197940,"officeOps":343561,"loanServicing":161356,"profServices":1370092,"intExpense":1650968,"miscExp":50357,"usedAuto":42870178,"newAuto":17188049,"creditCards":3738471,"unsecured":14335076,"netWorth":14508442,"netIncome":631322,"intIncome":6335927,"nonIntIncome":1813987,"cuNumber":14391},{"name":"SUN","city":"Hollywood","assets":125911956,"deposits":112367676,"loans":60765077,"numLoans":131557,"members":6451,"delinquent2mo":254502,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":3084567,"netIncome602":0,"loanIncome":2764506,"investIncome":1768807,"feeIncome":798647,"empComp":1346401,"officeOccupancy":206167,"officeOps":285605,"loanServicing":564053,"profServices":438130,"intExpense":994136,"miscExp":102094,"usedAuto":26359556,"newAuto":14017945,"creditCards":2700010,"unsecured":1797506,"netWorth":12952951,"netIncome":923779,"intIncome":4533313,"nonIntIncome":798647,"cuNumber":67332},{"name":"ADVENTHEALTH","city":"Altamonte Sprin","assets":120653283,"deposits":107689323,"loans":89172553,"numLoans":74823,"members":12949,"delinquent2mo":514450,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":3103806,"netIncome602":0,"loanIncome":3932086,"investIncome":640350,"feeIncome":575636,"empComp":1725433,"officeOccupancy":152196,"officeOps":121697,"loanServicing":479372,"profServices":490053,"intExpense":1596555,"miscExp":25652,"usedAuto":24175139,"newAuto":17818257,"creditCards":2148416,"unsecured":2413451,"netWorth":11360226,"netIncome":974353,"intIncome":4572436,"nonIntIncome":1268767,"cuNumber":67349},{"name":"POWERNET","city":"Tampa","assets":117070853,"deposits":105579010,"loans":32852930,"numLoans":52406,"members":3216,"delinquent2mo":383679,"netIncomeAfterCoF":0,"provisionLL":0,"nonIntExp":1725721,"netIncome602":608514,"loanIncome":1434619,"investIncome":1667836,"feeIncome":139310,"empComp":996730,"officeOccupancy":89417,"officeOps":161202,"loanServicing":14773,"profServices":362648,"intExpense":1129223,"miscExp":39286,"usedAuto":4312122,"newAuto":3704252,"creditCards":1354637,"unsecured":364140,"netWorth":11203973,"netIncome":608514,"intIncome":3102455,"nonIntIncome":408503,"cuNumber":68042}];
+
+const miami = FL.filter(c => ['Miami','Sweetwater','Hialeah','Miami Lakes','Coral Gables','Doral','Homestead','Kendall'].some(x => (c.city||'').includes(x)));
+const similar = FL.filter(c => c.assets >= 1e9 && c.assets <= 3e9);
+
+const fmt = n => n >= 1e9 ? '$'+(n/1e9).toFixed(2)+'B' : n >= 1e6 ? '$'+(n/1e6).toFixed(1)+'M' : '$'+(n/1e3).toFixed(0)+'K';
+const fmtP = n => n.toFixed(2)+'%';
+const fmtK = n => n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? (n/1e3).toFixed(1)+'K' : n;
+const pct = (v,t) => (v/t*100).toFixed(1);
+
+// ═══════════════ NAV ═══════════════
+document.querySelectorAll('.nav-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('page-'+tab.dataset.page).classList.add('active');
+    });
+});
+
+// ═══════════════ EXECUTIVE ═══════════════
+const execKpis = [
+    {l:'Total Assets',v:fmt(E.assets),c:'▲ 7.9%',s:'#1 Miami-Dade',cl:'up',color:'var(--p)'},
+    {l:'Net Worth',v:'$273M',c:'15.8%',s:'Well-capitalized',cl:'up',color:'var(--g)'},
+    {l:'Total Loans',v:'$1.03B',c:'▲ 34.8%',s:'55,188 active',cl:'up',color:'var(--a)'},
+    {l:'Members',v:'116,191',c:'▲ 28.1%',s:'+25K since 2022',cl:'up',color:'var(--purple)'},
+    {l:'Net Income (YTD)',v:'$9.1M',c:'ROA 0.70%',s:'Annualized',cl:'up',color:'var(--g)'},
+    {l:'Efficiency Ratio',v:E.efficiency.toFixed(1)+'%',c:E.efficiency<60?'Strong':'Watch',s:'Lower is better',cl:E.efficiency<60?'up':'dn',color:'var(--gold)'},
+];
+document.getElementById('exec-kpis').innerHTML = execKpis.map((k,i) =>
+    `<div class="kpi" style="animation-delay:${i*.08}s"><div style="position:absolute;top:0;left:0;right:0;height:3px;background:${k.color}"></div>
+    <div class="kpi-l">${k.l}</div><div class="kpi-v">${k.v}</div>
+    <div class="kpi-c ${k.cl}">${k.c}</div><div class="kpi-s">${k.s}</div></div>`
+).join('');
+
+// Growth chart
+const cc = {p:'#223E99',pl:'rgba(34,62,153,.1)',g:'#10b981',gl:'rgba(16,185,129,.1)',gd:'#BEB591',gdl:'rgba(190,181,145,.1)',pu:'#8b5cf6',pul:'rgba(139,92,246,.1)'};
+new Chart(document.getElementById('execGrowthChart'),{type:'line',data:{
+    labels:hist.map(h=>h.p),
+    datasets:[
+        {label:'Assets ($M)',data:hist.map(h=>h.a),borderColor:cc.p,backgroundColor:cc.pl,fill:true,tension:.3,pointRadius:5,borderWidth:3},
+        {label:'Loans ($M)',data:hist.map(h=>h.l),borderColor:cc.g,backgroundColor:cc.gl,fill:true,tension:.3,pointRadius:5,borderWidth:3},
+        {label:'Deposits ($M)',data:hist.map(h=>h.d),borderColor:cc.gd,backgroundColor:cc.gdl,fill:true,tension:.3,pointRadius:5,borderWidth:3},
+        {label:'Net Worth ($M)',data:hist.map(h=>h.nw),borderColor:cc.pu,backgroundColor:cc.pul,fill:true,tension:.3,pointRadius:5,borderWidth:3}
+    ]
+},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{usePointStyle:true,padding:14,font:{size:11}}}},scales:{y:{ticks:{callback:v=>'$'+v+'M',font:{size:11}},grid:{color:'rgba(0,0,0,.04)'}},x:{grid:{display:false}}}}});
+
+// Health Score
+function healthScore() {
+    const scores = [
+        {name:'Net Worth Ratio',val:E.nwRatio,max:20,weight:25,threshold:[7,10,15],rating:E.nwRatio>12?'Excellent':E.nwRatio>7?'Good':'Watch'},
+        {name:'Loan/Deposit',val:E.loanDeposit,max:100,weight:20,threshold:[55,70,85],rating:E.loanDeposit>60&&E.loanDeposit<85?'Optimal':'Watch'},
+        {name:'Delinquency Rate',val:E.delinqRate,max:3,weight:20,threshold:[1,2,3],rating:E.delinqRate<1?'Excellent':E.delinqRate<2?'Good':'Concern',invert:true},
+        {name:'ROA (Annualized)',val:E.roa,max:1.5,weight:15,threshold:[0.3,0.6,1],rating:E.roa>0.5?'Good':'Below Avg'},
+        {name:'Member Growth',val:7.8,max:15,weight:10,threshold:[2,5,10],rating:'Strong'},
+        {name:'Efficiency Ratio',val:E.efficiency,max:100,weight:10,threshold:[60,70,80],rating:E.efficiency<60?'Excellent':E.efficiency<70?'Good':'Watch',invert:true},
+    ];
+    let total = 0;
+    scores.forEach(s => {
+        let pct = s.invert ? Math.max(0,(s.max-s.val)/s.max*100) : Math.min(100,s.val/s.max*100);
+        if(s.name==='Loan/Deposit') pct = s.val>60&&s.val<85 ? 90 : s.val>50&&s.val<90 ? 70 : 40;
+        total += pct * s.weight / 100;
+    });
+    total = Math.min(100,Math.round(total));
+    const color = total>80?'var(--g)':total>60?'var(--a)':'var(--r)';
+    const offset = 440 - (440 * total / 100);
+    
+    let html = `<div style="display:flex;gap:24px;align-items:flex-start">
+    <div class="gauge-wrap"><div class="gauge">
+    <svg width="120" height="120" viewBox="0 0 160 160">
+    <circle cx="80" cy="80" r="70" fill="none" stroke="#e5e7eb" stroke-width="12"/>
+    <circle cx="80" cy="80" r="70" fill="none" stroke="${color}" stroke-width="12" stroke-dasharray="440" stroke-dashoffset="${offset}" stroke-linecap="round"/>
+    </svg><div class="gauge-num">${total}</div></div><div class="gauge-lbl">/ 100</div></div>
+    <div style="flex:1">`;
+    scores.forEach(s => {
+        const clr = s.rating.includes('Excellent')||s.rating==='Strong'||s.rating==='Good'||s.rating==='Optimal'?'var(--g)':s.rating==='Watch'||s.rating==='Below Avg'?'var(--a)':'var(--r)';
+        html += `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--g100);font-size:.82em">
+        <div style="width:10px;height:10px;border-radius:50%;background:${clr};flex-shrink:0"></div>
+        <div style="flex:1;font-weight:600">${s.name}</div>
+        <div style="width:70px;text-align:right">${s.invert?s.val.toFixed(s.val<1?3:1)+'%':s.val.toFixed(s.val<2?2:1)+'%'}</div>
+        <div class="badge ${s.rating.includes('Excellent')||s.rating==='Strong'||s.rating==='Good'||s.rating==='Optimal'?'badge-g':s.rating==='Watch'||s.rating==='Below Avg'?'badge-a':'badge-r'}">${s.rating}</div></div>`;
+    });
+    html += '</div></div>';
+    document.getElementById('healthScore').innerHTML = html;
+}
+healthScore();
+
+// State ranking
+function stateRank() {
+    const top = FL.slice(0,15);
+    const max = top[0].assets;
+    document.getElementById('stateRank').innerHTML = top.map(c => {
+        const isE = c.cuNumber===176;
+        const w = (c.assets/max*100).toFixed(1);
+        return `<div class="bar-row"><div class="bar-name" style="${isE?'color:var(--p);font-weight:700':''}">${c.name.substring(0,18)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${isE?'var(--p)':'var(--g300)'}"></div></div>
+        <div class="bar-val">${fmt(c.assets)}</div></div>`;
+    }).join('');
+}
+stateRank();
+
+// Percentiles
+function percentiles() {
+    const metrics = [
+        {name:'Net Worth Ratio',val:E.nwRatio,fn:c=>c.netWorth/c.assets*100,unit:'%'},
+        {name:'ROA (Ann.)',val:E.roa,fn:c=>c.netIncome/c.assets*100*4/3,unit:'%'},
+        {name:'Loan/Deposit',val:E.loanDeposit,fn:c=>c.loans/c.deposits*100,unit:'%'},
+        {name:'Delinquency Rate',val:E.delinqRate,fn:c=>c.delinquent2mo&&c.loans?(c.delinquent2mo/c.loans*100):0,unit:'%'},
+        {name:'Efficiency',val:E.efficiency,fn:c=>{const ti=c.loanIncome+c.investIncome+c.feeIncome+(c.nonIntIncome||0);const te=c.empComp+(c.officeOccupancy||0)+(c.officeOps||0)+(c.loanServicing||0)+(c.profServices||0)+(c.miscExp||0);return ti>0?te/ti*100:0},unit:'%'},
+    ];
+    document.getElementById('percentiles').innerHTML = metrics.map(m => {
+        const vals = FL.map(m.fn).filter(v=>v>0&&isFinite(v)).sort((a,b)=>a-b);
+        const pos = vals.filter(v=>v<=m.val).length;
+        const pctl = Math.round(pos/vals.length*100);
+        const w = Math.max(2,pctl);
+        return `<div class="pctl"><div class="pctl-label">${m.name}</div>
+        <div class="pctl-track"><div class="pctl-fill" style="width:${w}%"></div></div>
+        <div class="pctl-val">${m.val.toFixed(m.val<1?2:1)}${m.unit}</div>
+        <div class="badge ${pctl>70?'badge-g':pctl>30?'badge-a':'badge-r'}">${pctl}th</div></div>`;
+    }).join('');
+}
+percentiles();
+
+// ═══════════════ INCOME & EXPENSE ═══════════════
+const incKpis = [
+    {l:'Interest Income',v:fmt(E.intIncome),s:'Loan + Investment',color:'var(--g)'},
+    {l:'Non-Interest Income',v:fmt(E.nonIntIncome),s:'Fees & Services',color:'var(--p)'},
+    {l:'Interest Expense',v:fmt(E.intExpense),s:'Dividends & Interest',color:'var(--r)'},
+    {l:'Net Interest Margin',v:E.nim.toFixed(2)+'%',s:'Annualized',color:'var(--a)'},
+];
+document.getElementById('income-kpis').innerHTML = incKpis.map((k,i) =>
+    `<div class="kpi"><div style="position:absolute;top:0;left:0;right:0;height:3px;background:${k.color}"></div>
+    <div class="kpi-l">${k.l}</div><div class="kpi-v">${k.v}</div><div class="kpi-s">${k.s}</div></div>`
+).join('');
+
+// Revenue chart
+new Chart(document.getElementById('revenueChart'),{type:'doughnut',data:{
+    labels:['Loan Interest ($'+((E.loanIncome/1e6).toFixed(1))+'M)','Investment Income ($'+((E.investIncome/1e6).toFixed(1))+'M)','Fee Income ($'+((E.feeIncome/1e6).toFixed(1))+'M)'],
+    datasets:[{data:[E.loanIncome,E.investIncome,E.feeIncome],backgroundColor:[cc.p,cc.g,cc.gd],borderWidth:3,borderColor:'#fff'}]
+},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:10,font:{size:11}}}}}});
+
+// Expense chart
+new Chart(document.getElementById('expenseChart'),{type:'doughnut',data:{
+    labels:['Compensation ($'+((E.empComp/1e6).toFixed(1))+'M)','Office Ops ($'+((E.officeOps/1e6).toFixed(1))+'M)','Loan Servicing ($'+((E.loanServicing/1e6).toFixed(1))+'M)','Occupancy ($'+((E.officeOcc/1e6).toFixed(1))+'M)','Prof Services ($'+((E.profServices/1e6).toFixed(1))+'M)','Interest ($'+((E.intExpense/1e6).toFixed(1))+'M)'],
+    datasets:[{data:[E.empComp,E.officeOps,E.loanServicing,E.officeOcc,E.profServices,E.intExpense],backgroundColor:[cc.p,'#6366f1',cc.g,cc.gd,cc.pu,'#ef4444'],borderWidth:3,borderColor:'#fff'}]
+},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:10,font:{size:11}}}}}});
+
+// Peer comparison bar chart
+const peerAvg = {
+    loanIncome: similar.reduce((s,c)=>s+(c.loanIncome||0),0)/similar.length,
+    investIncome: similar.reduce((s,c)=>s+(c.investIncome||0),0)/similar.length,
+    feeIncome: similar.reduce((s,c)=>s+(c.feeIncome||0),0)/similar.length,
+    intExpense: similar.reduce((s,c)=>s+(c.intExpense||0),0)/similar.length,
+    empComp: similar.reduce((s,c)=>s+(c.empComp||0),0)/similar.length,
+};
+new Chart(document.getElementById('incomeCompareChart'),{type:'bar',data:{
+    labels:['Loan Income','Invest Income','Fee Income','Interest Expense','Employee Comp'],
+    datasets:[
+        {label:'EdFed',data:[E.loanIncome/1e6,E.investIncome/1e6,E.feeIncome/1e6,E.intExpense/1e6,E.empComp/1e6],backgroundColor:cc.p,borderRadius:6},
+        {label:'Peer Avg ($1-3B)',data:[peerAvg.loanIncome/1e6,peerAvg.investIncome/1e6,peerAvg.feeIncome/1e6,peerAvg.intExpense/1e6,peerAvg.empComp/1e6],backgroundColor:cc.gd,borderRadius:6}
+    ]
+},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{usePointStyle:true,font:{size:11}}}},scales:{y:{ticks:{callback:v=>'$'+v.toFixed(0)+'M'},grid:{color:'rgba(0,0,0,.04)'}},x:{grid:{display:false}}}}});
+
+// ═══════════════ LOAN PORTFOLIO ═══════════════
+const loanKpis = [
+    {l:'Total Outstanding',v:fmt(E.loans),s:E.numLoans.toLocaleString()+' loans',color:'var(--p)'},
+    {l:'Auto Loans',v:fmt(E.autoLoans),s:pct(E.autoLoans,E.loans)+'% of portfolio',color:'var(--g)'},
+    {l:'Delinquency Rate',v:E.delinqRate.toFixed(3)+'%',s:'2+ months past due',color:E.delinqRate<1?'var(--g)':'var(--a)'},
+    {l:'Avg Loan Size',v:'$'+(E.loans/E.numLoans/1000).toFixed(1)+'K',s:'Per active loan',color:'var(--purple)'},
+];
+document.getElementById('loan-kpis').innerHTML = loanKpis.map(k =>
+    `<div class="kpi"><div style="position:absolute;top:0;left:0;right:0;height:3px;background:${k.color}"></div>
+    <div class="kpi-l">${k.l}</div><div class="kpi-v">${k.v}</div><div class="kpi-s">${k.s}</div></div>`
+).join('');
+
+const loanTypes = [
+    {name:'Real Estate / Mortgage',val:E.reLoans,color:cc.p},
+    {name:'Used Auto',val:E.usedAuto,color:cc.g},
+    {name:'New Auto',val:E.newAuto,color:cc.gd},
+    {name:'Credit Cards',val:E.creditCards,color:cc.pu},
+    {name:'Unsecured / Other',val:E.unsecured,color:'#ef4444'},
+];
+
+new Chart(document.getElementById('loanPieChart'),{type:'doughnut',data:{
+    labels:loanTypes.map(t=>t.name+' ('+fmt(t.val)+')'),
+    datasets:[{data:loanTypes.map(t=>t.val),backgroundColor:loanTypes.map(t=>t.color),borderWidth:3,borderColor:'#fff'}]
+},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:10,font:{size:11}}}}}});
+
+// Loan mix comparison
+const peerLoanAvg = {
+    auto: similar.reduce((s,c)=>s+((c.usedAuto||0)+(c.newAuto||0)),0)/similar.length,
+    cc: similar.reduce((s,c)=>s+(c.creditCards||0),0)/similar.length,
+    unsec: similar.reduce((s,c)=>s+(c.unsecured||0),0)/similar.length,
+};
+new Chart(document.getElementById('loanCompareChart'),{type:'bar',data:{
+    labels:['Auto Loans','Credit Cards','Unsecured','RE/Mortgage'],
+    datasets:[
+        {label:'EdFed (% of loans)',data:[E.autoLoans/E.loans*100,E.creditCards/E.loans*100,E.unsecured/E.loans*100,E.reLoans/E.loans*100],backgroundColor:cc.p,borderRadius:6},
+        {label:'Peer Avg (% of loans)',data:[peerLoanAvg.auto/(similar.reduce((s,c)=>s+c.loans,0)/similar.length)*100,peerLoanAvg.cc/(similar.reduce((s,c)=>s+c.loans,0)/similar.length)*100,peerLoanAvg.unsec/(similar.reduce((s,c)=>s+c.loans,0)/similar.length)*100,100-peerLoanAvg.auto/(similar.reduce((s,c)=>s+c.loans,0)/similar.length)*100-peerLoanAvg.cc/(similar.reduce((s,c)=>s+c.loans,0)/similar.length)*100-peerLoanAvg.unsec/(similar.reduce((s,c)=>s+c.loans,0)/similar.length)*100],backgroundColor:cc.gd,borderRadius:6}
+    ]
+},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{usePointStyle:true,font:{size:11}}}},scales:{y:{ticks:{callback:v=>v+'%'},grid:{color:'rgba(0,0,0,.04)'}},x:{grid:{display:false}}}}});
+
+// ═══════════════ PEER TABLE ═══════════════
+function renderPeerTable(data, sortBy='assets') {
+    data.sort((a,b)=>b[sortBy]-(a[sortBy]||0));
+    const top = data.slice(0,25);
+    let html = '<thead><tr><th>#</th><th>Credit Union</th><th>Assets</th><th>Loans</th><th>Members</th><th>NW Ratio</th><th>L/D</th><th>Delinq</th><th>ROA</th></tr></thead><tbody>';
+    top.forEach((c,i) => {
+        const isE = c.cuNumber===176;
+        const nwr = c.netWorth&&c.assets?(c.netWorth/c.assets*100).toFixed(1)+'%':'—';
+        const ld = c.loans&&c.deposits?(c.loans/c.deposits*100).toFixed(1)+'%':'—';
+        const dq = c.delinquent2mo&&c.loans?(c.delinquent2mo/c.loans*100).toFixed(3)+'%':'—';
+        const roa = c.netIncome&&c.assets?(c.netIncome/c.assets*100*4/3).toFixed(2)+'%':'—';
+        html += `<tr class="${isE?'hl':''}"><td>${i+1}</td><td>${c.name}</td><td>${fmt(c.assets)}</td><td>${fmt(c.loans)}</td><td>${fmtK(c.members)}</td><td>${nwr}</td><td>${ld}</td><td>${dq}</td><td>${roa}</td></tr>`;
+    });
+    html += '</tbody>';
+    document.getElementById('peerFullTable').innerHTML = html;
+}
+renderPeerTable(FL);
+
+document.getElementById('peerMetric').addEventListener('change', e => {
+    const m = e.target.value;
+    const fns = {
+        assets: c=>c.assets, loans: c=>c.loans, members: c=>c.members,
+        nwRatio: c=>c.netWorth&&c.assets?c.netWorth/c.assets*100:0,
+        loanDeposit: c=>c.loans&&c.deposits?c.loans/c.deposits*100:0,
+        delinqRate: c=>c.delinquent2mo&&c.loans?c.delinquent2mo/c.loans*100:0,
+        roa: c=>c.netIncome&&c.assets?c.netIncome/c.assets*100*4/3:0,
+        efficiency: c=>{const ti=(c.loanIncome||0)+(c.investIncome||0)+(c.feeIncome||0);const te=(c.empComp||0)+(c.officeOccupancy||0)+(c.officeOps||0);return ti>0?te/ti*100:0}
+    };
+    const currentData = document.querySelector('.subtab.active').dataset.sub;
+    const d = currentData==='similar'?[...similar]:currentData==='miami'?[...miami]:[...FL];
+    d.sort((a,b)=>(fns[m](b)||0)-(fns[m](a)||0));
+    renderPeerTable(d, 'assets');
+});
+
+document.querySelectorAll('#peerSubtabs .subtab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('#peerSubtabs .subtab').forEach(t=>t.classList.remove('active'));
+        tab.classList.add('active');
+        const d = tab.dataset.sub==='similar'?similar:tab.dataset.sub==='miami'?miami:FL;
+        renderPeerTable([...d]);
+    });
+});
+
+// ═══════════════ CAMEL SCORECARD ═══════════════
+function camelScore() {
+    const components = [
+        {letter:'C',name:'Capital Adequacy',score:1,color:'var(--g)',metrics:[
+            {name:'Net Worth Ratio',val:E.nwRatio.toFixed(2)+'%',bench:'7% well-cap',status:'green',detail:'EdFed at 15.8% is more than double the well-capitalized threshold. Exceptional buffer.'},
+            {name:'NW Growth Rate',val:'10.7%',bench:'>5% healthy',status:'green',detail:'Consistent growth from $247M (2022) to $273M (2025).'},
+        ]},
+        {letter:'A',name:'Asset Quality',score:1,color:'var(--g)',metrics:[
+            {name:'Delinquency Rate',val:E.delinqRate.toFixed(3)+'%',bench:'<2% target',status:'green',detail:'Only $6.5M delinquent on a $1.03B portfolio. Excellent underwriting.'},
+            {name:'Loan/Asset Ratio',val:(E.loans/E.assets*100).toFixed(1)+'%',bench:'60-80%',status:'green',detail:'59.8% — room for more lending without overconcentration.'},
+        ]},
+        {letter:'M',name:'Management',score:2,color:'var(--g)',metrics:[
+            {name:'Efficiency Ratio',val:E.efficiency.toFixed(1)+'%',bench:'<65% strong',status:'green',detail:'52.8% is excellent. Well-managed operating costs.'},
+            {name:'Member Growth',val:'7.8%/yr',bench:'>3% target',status:'green',detail:'Consistent growth trajectory demonstrates strong value proposition.'},
+        ]},
+        {letter:'E',name:'Earnings',score:2,color:'var(--a)',metrics:[
+            {name:'ROA (Annualized)',val:E.roa.toFixed(2)+'%',bench:'>0.75% target',status:'amber',detail:'0.70% is slightly below the 0.75% target. Room for improvement through fee income or efficiency gains.'},
+            {name:'Net Interest Margin',val:E.nim.toFixed(2)+'%',bench:'>3% target',status:'green',detail:'3.26% is healthy. Strong earning asset yield vs cost of funds.'},
+        ]},
+        {letter:'L',name:'Liquidity',score:1,color:'var(--g)',metrics:[
+            {name:'Loan/Deposit Ratio',val:E.loanDeposit.toFixed(1)+'%',bench:'70-90% optimal',status:'green',detail:'71.2% — healthy balance between lending and liquidity reserves.'},
+            {name:'Cash Position',val:fmt(239117268),bench:'>5% of assets',status:'green',detail:'$239M cash and equivalents provides strong liquidity buffer.'},
+        ]},
+    ];
+    
+    const composite = (components.reduce((s,c)=>s+c.score,0)/5).toFixed(1);
+    const compRating = composite<=1.5?'1 - Strong':composite<=2.5?'2 - Satisfactory':composite<=3.5?'3 - Watch':'4+ - Concern';
+    document.getElementById('camelComposite').textContent = compRating;
+    document.getElementById('camelComposite').className = 'badge ' + (composite<=1.5?'badge-g':composite<=2.5?'badge-a':'badge-r');
+    
+    document.getElementById('camelGrid').innerHTML = components.map(c =>
+        `<div class="camel-item"><div class="camel-letter" style="color:${c.color}">${c.letter}</div>
+        <div class="camel-score">${c.score}</div><div class="camel-name">${c.name}</div></div>`
+    ).join('');
+    
+    let detail = '';
+    components.forEach(c => {
+        detail += `<div style="margin-bottom:14px"><div style="font-weight:700;font-size:.88em;margin-bottom:6px;color:var(--p)">${c.letter} — ${c.name} (Score: ${c.score})</div>`;
+        c.metrics.forEach(m => {
+            const clr = m.status==='green'?'var(--g)':m.status==='amber'?'var(--a)':'var(--r)';
+            detail += `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:.82em;border-bottom:1px solid var(--g100)">
+            <div style="width:8px;height:8px;border-radius:50%;background:${clr};flex-shrink:0"></div>
+            <div style="flex:1"><strong>${m.name}:</strong> ${m.val} <span style="color:var(--g400)">(${m.bench})</span></div></div>`;
+        });
+        detail += '</div>';
+    });
+    document.getElementById('camelDetail').innerHTML = detail;
+    
+    // Watch items
+    let watch = '<div style="font-size:.85em">';
+    watch += `<div style="padding:10px 0;border-bottom:1px solid var(--g100)">
+        <div style="display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:50%;background:var(--a)"></div>
+        <strong>ROA Below Target</strong></div>
+        <div style="color:var(--g500);margin-top:4px;padding-left:18px">At 0.70%, ROA is slightly below the 0.75% peer benchmark. Consider fee income diversification or expense optimization to close the gap.</div></div>`;
+    watch += `<div style="padding:10px 0;border-bottom:1px solid var(--g100)">
+        <div style="display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:50%;background:var(--a)"></div>
+        <strong>Loan/Deposit Ratio Trending Up</strong></div>
+        <div style="color:var(--g500);margin-top:4px;padding-left:18px">Rising from 55% (2022) to 71% (2025). Still healthy, but monitor for liquidity tightening if loan growth continues to outpace deposits.</div></div>`;
+    watch += `<div style="padding:10px 0;border-bottom:1px solid var(--g100)">
+        <div style="display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:50%;background:var(--g)"></div>
+        <strong>Interest Rate Risk</strong></div>
+        <div style="color:var(--g500);margin-top:4px;padding-left:18px">With $253M in used auto and $119M in new auto loans, the portfolio is well-diversified across rate environments. No concentration risk flags.</div></div>`;
+    watch += `<div style="padding:10px 0">
+        <div style="display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:50%;background:var(--g)"></div>
+        <strong>Capital Position</strong></div>
+        <div style="color:var(--g500);margin-top:4px;padding-left:18px">Net worth ratio of 15.8% provides exceptional cushion. EdFed could absorb significant losses before approaching the 7% well-capitalized floor.</div></div>`;
+    watch += '</div>';
+    document.getElementById('camelWatch').innerHTML = watch;
+}
+camelScore();
+
+// ═══════════════ GROWTH SIMULATOR ═══════════════
+let simChart = null;
+function runSimulation() {
+    const memGrowth = parseInt(document.getElementById('simMembers').value)/100;
+    const loanGrowth = parseInt(document.getElementById('simLoans').value)/100;
+    const depGrowth = parseInt(document.getElementById('simDeposits').value)/100;
+    
+    document.getElementById('simMemVal').textContent = (memGrowth*100)+'%';
+    document.getElementById('simLoanVal').textContent = (loanGrowth*100)+'%';
+    document.getElementById('simDepVal').textContent = (depGrowth*100)+'%';
+    
+    const years = ['2025 (Now)','2026','2027','2028','2029','2030'];
+    const data = [{m:E.members,l:E.loans,d:E.deposits,a:E.assets}];
+    
+    for(let i=1;i<6;i++){
+        const prev = data[i-1];
+        data.push({
+            m: Math.round(prev.m*(1+memGrowth)),
+            l: Math.round(prev.l*(1+loanGrowth)),
+            d: Math.round(prev.d*(1+depGrowth)),
+            a: Math.round(prev.a*(1+(memGrowth+depGrowth)/2)),
+        });
+    }
+    
+    if(simChart) simChart.destroy();
+    simChart = new Chart(document.getElementById('simChart'),{type:'line',data:{
+        labels:years,
+        datasets:[
+            {label:'Assets',data:data.map(d=>d.a/1e9),borderColor:cc.p,backgroundColor:cc.pl,fill:true,tension:.3,pointRadius:5,borderWidth:3},
+            {label:'Loans',data:data.map(d=>d.l/1e9),borderColor:cc.g,backgroundColor:cc.gl,fill:true,tension:.3,pointRadius:5,borderWidth:3},
+            {label:'Deposits',data:data.map(d=>d.d/1e9),borderColor:cc.gd,backgroundColor:cc.gdl,fill:true,tension:.3,pointRadius:5,borderWidth:3},
+        ]
+    },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{usePointStyle:true,font:{size:11}}}},scales:{y:{ticks:{callback:v=>'$'+v.toFixed(1)+'B'},grid:{color:'rgba(0,0,0,.04)'}},x:{grid:{display:false}}}}});
+    
+    // Milestones
+    const final = data[5];
+    const ld = final.l/final.d*100;
+    let html = '<div style="font-size:.85em">';
+    const milestones = [
+        {icon:'🏦',title:`Assets: ${fmt(final.a)}`,desc:`${final.a>2e9?'Crosses $2B threshold!':'Approaching $2B milestone'}`},
+        {icon:'💰',title:`Loans: ${fmt(final.l)}`,desc:`${final.l>1.5e9?'Exceeds $1.5B!':'Growing steadily toward $1.5B'}`},
+        {icon:'👥',title:`Members: ${fmtK(final.m)}`,desc:`${final.m>150000?'Surpasses 150K members!':'On track for '+fmtK(final.m)+' members'}`},
+        {icon:'📊',title:`Loan/Deposit: ${ld.toFixed(1)}%`,desc:`${ld>85?'⚠️ May need deposit campaigns':'Healthy utilization ratio'}`},
+        {icon:'🗺️',title:'FL Ranking',desc:`${final.a>2.5e9?'Could enter Top 10 in Florida':'Solidifies position in Top 15'}`},
+    ];
+    milestones.forEach(m => {
+        html += `<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--g100)">
+        <div style="font-size:1.3em">${m.icon}</div>
+        <div><div style="font-weight:700">${m.title}</div>
+        <div style="color:var(--g500);font-size:.9em">${m.desc}</div></div></div>`;
+    });
+    html += '</div>';
+    document.getElementById('simMilestones').innerHTML = html;
+}
+
+['simMembers','simLoans','simDeposits'].forEach(id => {
+    document.getElementById(id).addEventListener('input', runSimulation);
+});
+runSimulation();
+</script>
+</body>
+</html>
