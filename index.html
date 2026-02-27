@@ -48,7 +48,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .g5{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
 .g6{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
 @media(max-width:1100px){.g2,.g3{grid-template-columns:1fr}.g4,.g5,.g6{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:700px){.g4,.g5,.g6{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){
+    .g4,.g5,.g6{grid-template-columns:repeat(2,1fr)}
+    .nav-inner{flex-wrap:wrap;padding:8px 12px;gap:8px}
+    .nav-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;flex:none;width:100%;justify-content:flex-start;gap:0;padding-bottom:4px}
+    .nav-tab{padding:6px 12px;font-size:.72em;flex-shrink:0}
+    .nav-brand{font-size:1em}
+    .nav-meta{display:none}
+    .page{padding:16px 14px 40px}
+    .card-b{padding:14px 16px}
+    .tbl{min-width:650px}
+    .card-b.has-table{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 16px 14px}
+    .health-wrap{flex-direction:column!important;gap:16px!important}
+    .health-wrap>div:last-child .indicator-row{flex-direction:column}
+    .bar-name{width:80px;font-size:.7em}
+    .pctl-label{width:70px;font-size:.72em}
+    .camel-grid{grid-template-columns:repeat(5,1fr);gap:6px}
+    .camel-letter{font-size:1.4em}
+    .camel-score{font-size:1em}
+    .camel-name{font-size:.6em}
+}
 
 /* KPI Cards */
 .kpi{background:#fff;border-radius:var(--rad);padding:18px 20px;box-shadow:var(--shm);position:relative;overflow:hidden}
@@ -57,7 +76,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .kpi-v{font-size:1.6em;font-weight:800;color:var(--g900);letter-spacing:-.02em;line-height:1.1}
 .kpi-c{display:inline-flex;align-items:center;gap:3px;font-size:.72em;font-weight:600;margin-top:5px;padding:2px 7px;border-radius:6px}
 .kpi-c.up{color:#047857;background:var(--gb)}.kpi-c.dn{color:#dc2626;background:var(--rb)}
-.kpi-s{font-size:.68em;color:var(--g400);margin-top:3px}
+.kpi-s{font-size:.68em;color:var(--g500);margin-top:3px}
 
 /* Tables */
 .tbl{width:100%;border-collapse:collapse;font-size:.82em}
@@ -70,7 +89,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 /* Bars */
 .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:.8em}
-.bar-name{width:130px;flex-shrink:0;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-name{width:170px;flex-shrink:0;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bar-track{flex:1;height:22px;background:var(--g100);border-radius:6px;overflow:hidden}
 .bar-fill{height:100%;border-radius:6px;transition:width 1s}
 .bar-val{width:70px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0}
@@ -200,7 +219,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 </div>
 
 <div class="card"><div class="card-h"><div class="card-t">🏆 Loan Portfolio Peer Comparison</div></div>
-<div class="card-b" style="padding:0 22px 18px"><table class="tbl" id="loanPeerTable"></table></div></div>
+<div class="card-b has-table"><table class="tbl" id="loanPeerTable"></table></div></div>
 </div>
 
 <!-- ═══════════════ PEER ANALYSIS ═══════════════ -->
@@ -225,7 +244,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <option value="efficiency">Efficiency Ratio</option>
 </select>
 </div></div>
-<div class="card-b" style="padding:0 22px 18px"><table class="tbl" id="peerFullTable"></table></div></div>
+<div class="card-b has-table"><table class="tbl" id="peerFullTable"></table></div></div>
 </div>
 
 <!-- ═══════════════ CAMEL SCORECARD ═══════════════ -->
@@ -382,7 +401,7 @@ function healthScore() {
     const color = total>80?'var(--g)':total>60?'var(--a)':'var(--r)';
     const offset = 440 - (440 * total / 100);
     
-    let html = `<div style="display:flex;gap:24px;align-items:flex-start">
+    let html = `<div class="health-wrap" style="display:flex;gap:24px;align-items:flex-start">
     <div class="gauge-wrap"><div class="gauge">
     <svg width="120" height="120" viewBox="0 0 160 160">
     <circle cx="80" cy="80" r="70" fill="none" stroke="#e5e7eb" stroke-width="12"/>
@@ -409,7 +428,7 @@ function stateRank() {
     document.getElementById('stateRank').innerHTML = top.map(c => {
         const isE = c.cuNumber===176;
         const w = (c.assets/max*100).toFixed(1);
-        return `<div class="bar-row"><div class="bar-name" style="${isE?'color:var(--p);font-weight:700':''}">${c.name.substring(0,18)}</div>
+        return `<div class="bar-row"><div class="bar-name" style="${isE?'color:var(--p);font-weight:700':''}">${c.name.substring(0,22)}</div>
         <div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${isE?'var(--p)':'var(--g300)'}"></div></div>
         <div class="bar-val">${fmt(c.assets)}</div></div>`;
     }).join('');
