@@ -536,6 +536,21 @@ new Chart(document.getElementById('loanCompareChart'),{type:'bar',data:{
     ]
 },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{usePointStyle:true,font:{size:11}}}},scales:{y:{ticks:{callback:v=>v+'%'},grid:{color:'rgba(0,0,0,.04)'}},x:{grid:{display:false}}}}});
 
+// ═══════════════ LOAN PEER TABLE ═══════════════
+(function(){
+    const peers = similar.sort((a,b)=>b.loans-a.loans);
+    let html = '<thead><tr><th>#</th><th>Credit Union</th><th>Total Loans</th><th>Auto</th><th>Credit Cards</th><th>Unsecured</th><th>L/D Ratio</th><th>Delinq Rate</th></tr></thead><tbody>';
+    peers.forEach((c,i) => {
+        const isE = c.cuNumber===176;
+        const auto = ((c.usedAuto||0)+(c.newAuto||0));
+        const ld = c.loans&&c.deposits?(c.loans/c.deposits*100).toFixed(1)+'%':'—';
+        const dq = c.delinquent2mo&&c.loans?(c.delinquent2mo/c.loans*100).toFixed(3)+'%':'—';
+        html += `<tr class="${isE?'hl':''}"><td>${i+1}</td><td>${c.name}</td><td>${fmt(c.loans)}</td><td>${fmt(auto)}</td><td>${fmt(c.creditCards||0)}</td><td>${fmt(c.unsecured||0)}</td><td>${ld}</td><td>${dq}</td></tr>`;
+    });
+    html += '</tbody>';
+    document.getElementById('loanPeerTable').innerHTML = html;
+})();
+
 // ═══════════════ PEER TABLE ═══════════════
 function renderPeerTable(data, sortBy='assets') {
     data.sort((a,b)=>b[sortBy]-(a[sortBy]||0));
